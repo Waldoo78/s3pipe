@@ -1,0 +1,141 @@
+import os
+import numpy as np
+import pandas as pd
+from scipy import stats
+import matplotlib.pyplot as plt
+import seaborn as sns
+gift_folder=r'C:\Users\wbou2\Documents\GIFT-Eval\results'
+
+
+models = {}
+for model in os.listdir(gift_folder):
+    if os.path.isdir(os.path.join(gift_folder, model)):
+        csv_path = os.path.join(gift_folder, model, 'all_results.csv')
+        if os.path.exists(csv_path):
+            df = pd.read_csv(csv_path)
+            models[model] = df.sort_values('dataset').reset_index(drop=True)
+
+
+
+ratio = models['naive']["eval_metrics/MASE[0.5]"] / models['seasonal_naive']["eval_metrics/MASE[0.5]"]
+
+
+naive_better_mask = ratio < 1
+datasets_naive_wins = models['naive'].loc[naive_better_mask, 'dataset']
+
+print("Datasets où Naive bat Seasonal (ratio MASE < 1):")
+print(datasets_naive_wins.tolist())
+
+print(f"\nNombre de datasets: {len(datasets_naive_wins)}")
+
+from scipy import stats
+import numpy as np
+import pandas as pd
+
+# Baseline adaptative
+ratio = models['naive']["eval_metrics/MASE[0.5]"] / models['seasonal_naive']["eval_metrics/MASE[0.5]"]
+best_baseline = np.where(ratio < 1, 
+                        models['naive']["eval_metrics/MASE[0.5]"], 
+                        models['seasonal_naive']["eval_metrics/MASE[0.5]"])
+
+# Créer matrice pour calcul des rangs
+all_ratios = {}
+for model in models.keys():
+    ratios = models[model]["eval_metrics/MASE[0.5]"] / best_baseline
+    all_ratios[model] = ratios
+
+# Convertir en DataFrame pour faciliter le ranking
+df_ratios = pd.DataFrame(all_ratios)
+
+# Ajouter les noms des datasets comme index
+df_ratios.index = models['naive']['dataset']
+
+# Calculer les rangs par dataset (ligne par ligne)
+df_ranks = df_ratios.rank(axis=1, method='min')
+
+# Calculer scores géométriques et rangs moyens
+scores = {}
+mean_ranks = {}
+
+for model in models.keys():
+    ratios = models[model]["eval_metrics/MASE[0.5]"] / best_baseline
+    scores[model] = stats.gmean(ratios)
+    mean_ranks[model] = df_ranks[model].mean()
+
+# Trier et afficher
+print(f"{'Rank':<4} {'Model':<20} {'Geom Score':<10} {'Mean Rank':<10}")
+print("-" * 50)
+for i, (model, score) in enumerate(sorted(scores.items(), key=lambda x: x[1]), 1):
+    print(f"{i:2d}. {model:<20} {score:<10.3f} {mean_ranks[model]:<10.1f}")
+
+
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.cluster.hierarchy import linkage, leaves_list
+from scipy.spatial.distance import pdist
+
+# Réutiliser df_ratios déjà calculé (exclure naive et seasonal_naive)
+heatmap_data = df_ratios.drop(columns=['naive', 'seasonal_naive'])
+
+# Clipper à 2.0
+heatmap_clipped = heatmap_data.clip(upper=3.0)
+
+# Clustering des datasets par profil de performance
+distances = pdist(heatmap_clipped, metric='euclidean')
+linkage_matrix = linkage(distances, method='ward')
+new_order = leaves_list(linkage_matrix)
+
+# Réorganiser selon le clustering
+heatmap_clustered = heatmap_clipped.iloc[new_order]
+
+plt.figure(figsize=(20, 25))
+sns.heatmap(heatmap_clustered, 
+            annot=False,
+            cmap='RdYlGn_r',
+            center=1.0,
+            vmin=0.01,
+            vmax=2.0,
+            cbar_kws={'label': 'Normalized MASE (clipped at 3.0)'},
+            yticklabels=True)
+
+plt.title('Performance Heatmap: Models vs Datasets (Clustered)', fontsize=16)
+plt.xlabel('Models', fontsize=12)
+plt.ylabel('Datasets', fontsize=12)
+plt.xticks(rotation=45, ha='right')
+plt.yticks(rotation=0, fontsize=10)
+plt.tight_layout()
+plt.show()
+
+dataset_difficulty_geom = {}
+
+for dataset in heatmap_clustered.index:
+    row = heatmap_clustered.loc[dataset]
+    dataset_difficulty_geom[dataset] = stats.gmean(row)
+
+# Trier par difficulté géométrique
+sorted_difficulty = sorted(dataset_difficulty_geom.items(), key=lambda x: x[1], reverse=True)
+
+print("Ranking diffuclty Dataset:")
+print("=" * 60)
+
+for i, (dataset, geom_score) in enumerate(sorted_difficulty, 1):
+    print(f"{i:2d}. {dataset:<40} {geom_score:.3f}")
+
+print(f"\nTotal datasets: {len(sorted_difficulty)}")
+
+
+# Extraire fréquence et difficulté
+freq_difficulty = []
+for i, (dataset, difficulty) in enumerate(sorted_difficulty, 1):
+    parts = dataset.split('/')
+    freq = parts[1]
+    freq_difficulty.append({'dataset': dataset, 'frequency': freq, 
+                           'difficulty': difficulty, 'rank': i})
+
+df_freq = pd.DataFrame(freq_difficulty)
+
+# Moyenne par fréquence
+print(" Mean difficulty by freq:")
+freq_stats = df_freq.groupby('frequency')['difficulty'].agg(['mean', 'count', 'std']).sort_values('mean', ascending=False)
+print(freq_stats)
