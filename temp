@@ -1,92 +1,130 @@
+# %%
 import os
 import numpy as np
 import pandas as pd
 from scipy import stats
 import matplotlib.pyplot as plt
 import seaborn as sns
-gift_folder=r'C:\Users\wbou2\Documents\GIFT-Eval\results'
+from scipy.cluster.hierarchy import linkage, leaves_list
+from scipy.spatial.distance import pdist
 
+# %%
+gift_results_folder='/home/wbouainouche/Samformer_distillation/GIFT-Eval/results'
 
+# %%
 models = {}
-for model in os.listdir(gift_folder):
-    if os.path.isdir(os.path.join(gift_folder, model)):
-        csv_path = os.path.join(gift_folder, model, 'all_results.csv')
+for model in os.listdir(gift_results_folder):
+    if os.path.isdir(os.path.join(gift_results_folder, model)):
+        csv_path = os.path.join(gift_results_folder, model, 'all_results.csv')
         if os.path.exists(csv_path):
             df = pd.read_csv(csv_path)
             models[model] = df.sort_values('dataset').reset_index(drop=True)
 
+# %% [markdown]
+# DATASET DRIVEN ANALYSIS 
 
-
+# %%
 ratio = models['naive']["eval_metrics/MASE[0.5]"] / models['seasonal_naive']["eval_metrics/MASE[0.5]"]
-
 
 naive_better_mask = ratio < 1
 datasets_naive_wins = models['naive'].loc[naive_better_mask, 'dataset']
 
-print("Datasets où Naive bat Seasonal (ratio MASE < 1):")
+print("Datasets where Naive beats Seasonal (MASE ratio < 1):")
 print(datasets_naive_wins.tolist())
 
-print(f"\nNombre de datasets: {len(datasets_naive_wins)}")
-
-from scipy import stats
-import numpy as np
-import pandas as pd
-
-# Baseline adaptative
-ratio = models['naive']["eval_metrics/MASE[0.5]"] / models['seasonal_naive']["eval_metrics/MASE[0.5]"]
+# %%
 best_baseline = np.where(ratio < 1, 
                         models['naive']["eval_metrics/MASE[0.5]"], 
                         models['seasonal_naive']["eval_metrics/MASE[0.5]"])
 
-# Créer matrice pour calcul des rangs
 all_ratios = {}
 for model in models.keys():
     ratios = models[model]["eval_metrics/MASE[0.5]"] / best_baseline
     all_ratios[model] = ratios
 
-# Convertir en DataFrame pour faciliter le ranking
 df_ratios = pd.DataFrame(all_ratios)
 
-# Ajouter les noms des datasets comme index
 df_ratios.index = models['naive']['dataset']
 
-# Calculer les rangs par dataset (ligne par ligne)
-df_ranks = df_ratios.rank(axis=1, method='min')
+df_ratios = df_ratios.reset_index(drop=True)
+domain_series = pd.Series(models['naive']['domain'])
+num_variates_series = pd.Series(models['naive']['num_variates'])
 
-# Calculer scores géométriques et rangs moyens
-scores = {}
+df_ratios['domain'] = domain_series.values
+df_ratios['num_variates'] = num_variates_series.values
+
+df_ratios.index = models['naive']['dataset']
+
+model_columns = [col for col in df_ratios.columns if col not in ['domain', 'num_variates']]
+
+# Calcul des rangs
+df_ranks = df_ratios[model_columns].rank(axis=1, method='min')
+
+# Calcul des scores et statistiques
+scores_arith = {}
 mean_ranks = {}
+std_ranks = {}
+min_ranks = {}
+q25_ranks = {}
+median_ranks = {}
+q75_ranks = {}
+max_ranks = {}
+iqr_ranks = {}
+worse_than_baseline = {}  # Nouvelle métrique
 
-for model in models.keys():
-    ratios = models[model]["eval_metrics/MASE[0.5]"] / best_baseline
-    scores[model] = stats.gmean(ratios)
-    mean_ranks[model] = df_ranks[model].mean()
+for model in model_columns:
+    ratios = df_ratios[model]
+    ranks = df_ranks[model]
+    
+    # Moyenne arithmétique
+    scores_arith[model] = ratios.mean()
+    mean_ranks[model] = ranks.mean()
+    std_ranks[model] = ranks.std()
+    min_ranks[model] = ranks.min()
+    q25_ranks[model] = ranks.quantile(0.25)
+    median_ranks[model] = ranks.median()
+    q75_ranks[model] = ranks.quantile(0.75)
+    max_ranks[model] = ranks.max()
+    iqr_ranks[model] = q75_ranks[model] - q25_ranks[model]
+    
+    # Nombre de fois où le modèle est pire que la baseline (ratio > 1)
+    worse_than_baseline[model] = (ratios > 1).sum()
 
-# Trier et afficher
-print(f"{'Rank':<4} {'Model':<20} {'Geom Score':<10} {'Mean Rank':<10}")
-print("-" * 50)
-for i, (model, score) in enumerate(sorted(scores.items(), key=lambda x: x[1]), 1):
-    print(f"{i:2d}. {model:<20} {score:<10.3f} {mean_ranks[model]:<10.1f}")
+# Affichage des résultats
+print(f"{'Rank':<4} {'Model':<25} {'Arith Score':<10} {'Mean':<6} {'Std':<6} {'Min':<4} {'Q25':<6} {'Med':<6} {'Q75':<6} {'Max':<4} {'IQR':<6} {'Worse':<5}")
+print("-" * 115)
+
+# Tri par score arithmétique
+for i, (model, score) in enumerate(sorted(scores_arith.items(), key=lambda x: x[1]), 1):
+    arith_score = scores_arith[model]
+    mean_rank = mean_ranks[model]
+    std_rank = std_ranks[model]
+    min_rank = min_ranks[model]
+    q25_rank = q25_ranks[model]
+    median_rank = median_ranks[model]
+    q75_rank = q75_ranks[model]
+    max_rank = max_ranks[model]
+    iqr_rank = iqr_ranks[model]
+    worse_count = worse_than_baseline[model]
+    
+    print(f"{i:2d}. {model:<25} {arith_score:<10.3f} {mean_rank:<6.1f} {std_rank:<6.1f} {min_rank:<4.0f} {q25_rank:<6.1f} {median_rank:<6.1f} {q75_rank:<6.1f} {max_rank:<4.0f} {iqr_rank:<6.1f} {worse_count:<5.0f}")
+
+print(f"\nTotal models: {len(scores_arith)}")
+print(f"Total datasets: {len(df_ratios)}")
 
 
+# %%
+heatmap_data = df_ratios.drop(columns=['naive', 'seasonal_naive', 'domain', 'num_variates'])
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-from scipy.cluster.hierarchy import linkage, leaves_list
-from scipy.spatial.distance import pdist
+# Clipped at 3.0
+heatmap_clipped = heatmap_data.clip(upper=2.0)
 
-# Réutiliser df_ratios déjà calculé (exclure naive et seasonal_naive)
-heatmap_data = df_ratios.drop(columns=['naive', 'seasonal_naive'])
 
-# Clipper à 2.0
-heatmap_clipped = heatmap_data.clip(upper=3.0)
-
-# Clustering des datasets par profil de performance
 distances = pdist(heatmap_clipped, metric='euclidean')
 linkage_matrix = linkage(distances, method='ward')
 new_order = leaves_list(linkage_matrix)
 
-# Réorganiser selon le clustering
+
 heatmap_clustered = heatmap_clipped.iloc[new_order]
 
 plt.figure(figsize=(20, 25))
@@ -96,7 +134,7 @@ sns.heatmap(heatmap_clustered,
             center=1.0,
             vmin=0.01,
             vmax=2.0,
-            cbar_kws={'label': 'Normalized MASE (clipped at 3.0)'},
+            cbar_kws={'label': 'Normalized MASE (clipped at 2.0)'},
             yticklabels=True)
 
 plt.title('Performance Heatmap: Models vs Datasets (Clustered)', fontsize=16)
@@ -107,35 +145,130 @@ plt.yticks(rotation=0, fontsize=10)
 plt.tight_layout()
 plt.show()
 
-dataset_difficulty_geom = {}
+# %%
+dataset_difficulty_arith = {}
 
 for dataset in heatmap_clustered.index:
     row = heatmap_clustered.loc[dataset]
-    dataset_difficulty_geom[dataset] = stats.gmean(row)
+    dataset_difficulty_arith[dataset] = np.mean(row)
 
-# Trier par difficulté géométrique
-sorted_difficulty = sorted(dataset_difficulty_geom.items(), key=lambda x: x[1], reverse=True)
+sorted_difficulty = sorted(dataset_difficulty_arith.items(), key=lambda x: x[1], reverse=True)
 
-print("Ranking diffuclty Dataset:")
-print("=" * 60)
+print("Ranking Difficulty Dataset:")
+print("=" * 70)
 
-for i, (dataset, geom_score) in enumerate(sorted_difficulty, 1):
-    print(f"{i:2d}. {dataset:<40} {geom_score:.3f}")
+for i, (dataset, mean_score) in enumerate(sorted_difficulty, 1):
+    row = heatmap_clustered.loc[dataset]
+    std_score = np.std(row)
+    print(f"{i:2d}. {dataset:<40} Mean: {mean_score:.3f} | Std: {std_score:.3f}")
 
 print(f"\nTotal datasets: {len(sorted_difficulty)}")
 
+# %%
+datasets_10s = []
+for dataset in heatmap_clustered.index:
+    if '/' in dataset:
+        freq = dataset.split('/')[1]
+        if freq == '10S':
+            datasets_10s.append(dataset)
 
-# Extraire fréquence et difficulté
-freq_difficulty = []
-for i, (dataset, difficulty) in enumerate(sorted_difficulty, 1):
-    parts = dataset.split('/')
-    freq = parts[1]
-    freq_difficulty.append({'dataset': dataset, 'frequency': freq, 
-                           'difficulty': difficulty, 'rank': i})
+print(f"Datasets with 10S frequency: {datasets_10s}")
+print(f"Total 10S datasets: {len(datasets_10s)}")
 
-df_freq = pd.DataFrame(freq_difficulty)
 
-# Moyenne par fréquence
-print(" Mean difficulty by freq:")
-freq_stats = df_freq.groupby('frequency')['difficulty'].agg(['mean', 'count', 'std']).sort_values('mean', ascending=False)
-print(freq_stats)
+model_performance_10s = {}
+
+model_columns = [col for col in heatmap_clustered.columns if col not in ['domain', 'num_variates']]
+
+for model in model_columns:
+    scores_10s = []
+    for dataset in datasets_10s:
+        score = heatmap_clustered.loc[dataset, model]
+        scores_10s.append(score)
+    
+    model_performance_10s[model] = np.mean(scores_10s)
+
+
+sorted_models = sorted(model_performance_10s.items(), key=lambda x: x[1])
+
+print("\nModel Performance on 10S frequency (lower is better):")
+print("=" * 60)
+for i, (model, mean_score) in enumerate(sorted_models, 1):
+    print(f"{i:2d}. {model:<20} | Mean: {mean_score:.3f}")
+
+print(f"\nTotal models: {len(sorted_models)}")
+
+
+best_model = sorted_models[0]
+worst_model = sorted_models[-1]
+
+print(f"\nBest model on 10S: {best_model[0]} ({best_model[1]:.3f})")
+print(f"Worst model on 10S: {worst_model[0]} ({worst_model[1]:.3f})")
+print(f"Performance gap: {worst_model[1] - best_model[1]:.3f}x")
+
+# %%
+models_by_year = {
+    2015: ['auto_arima', 'auto_ets', 'auto_theta'],
+    2017: ['deepar'],
+    2019: ['n_beats', 'tft'],
+    2022: ['d_linear', 'patch_tst'],
+    2023: ['i_transformer', 'tide'],
+    2024: ['chronos-small', 'chronos_base', 'chronos_large', 
+           'moirai_1.1_R_base_no_leak', 'moirai_1.1_R_large_no_leak', 'moirai_1.1_R_small_no_leak',
+           'timesfm', 'visionts']
+}
+
+
+
+# %% [markdown]
+# MODEL ANALYSIS 
+
+# %%
+
+all_mase = pd.DataFrame({
+    model: df['eval_metrics/MASE[0.5]'] 
+    for model, df in models.items()
+})
+
+
+ranks = all_mase.rank(axis=1)  
+
+n_models = len(models)
+top_30_pct_threshold = 0.3 * n_models  
+worst_30_pct_threshold = 0.7 * n_models
+
+results_top = []
+results_worst = []
+for model in ranks.columns:
+    model_ranks = ranks[model]
+    
+    top_30_rate = (model_ranks <= top_30_pct_threshold).mean()
+    worst_30_rate = (model_ranks > worst_30_pct_threshold).mean()
+    
+    results_top.append((model, top_30_rate))
+    results_worst.append((model, worst_30_rate))
+
+results_top.sort(key=lambda x: x[1], reverse=True)
+results_worst.sort(key=lambda x: x[1], reverse=True)
+
+print("Models with highest Top 30% rate:")
+print("=" * 50)
+for i, (model_name, top_30_rate) in enumerate(results_top, 1):
+    print(f"{i:2d}. {model_name:<25} | Top30%: {top_30_rate:.1%}")
+
+print(f"\nTotal models: {len(results_top)}")
+
+print("\n\nModels with highest Worst 30% rate:")
+print("=" * 50)
+for i, (model_name, worst_30_rate) in enumerate(results_worst, 1):
+    print(f"{i:2d}. {model_name:<25} | Worst30%: {worst_30_rate:.1%}")
+
+print(f"\nTotal models: {len(results_worst)}")
+
+# %% [markdown]
+# Count worst than baseline
+
+# %%
+
+
+
