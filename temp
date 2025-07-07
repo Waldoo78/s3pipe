@@ -57,67 +57,14 @@ df_ratios.index = models['naive']['dataset']
 
 model_columns = [col for col in df_ratios.columns if col not in ['domain', 'num_variates']]
 
-# Calcul des rangs
+
 df_ranks = df_ratios[model_columns].rank(axis=1, method='min')
-
-# Calcul des scores et statistiques
-scores_arith = {}
-mean_ranks = {}
-std_ranks = {}
-min_ranks = {}
-q25_ranks = {}
-median_ranks = {}
-q75_ranks = {}
-max_ranks = {}
-iqr_ranks = {}
-worse_than_baseline = {}  # Nouvelle métrique
-
-for model in model_columns:
-    ratios = df_ratios[model]
-    ranks = df_ranks[model]
-    
-    # Moyenne arithmétique
-    scores_arith[model] = ratios.mean()
-    mean_ranks[model] = ranks.mean()
-    std_ranks[model] = ranks.std()
-    min_ranks[model] = ranks.min()
-    q25_ranks[model] = ranks.quantile(0.25)
-    median_ranks[model] = ranks.median()
-    q75_ranks[model] = ranks.quantile(0.75)
-    max_ranks[model] = ranks.max()
-    iqr_ranks[model] = q75_ranks[model] - q25_ranks[model]
-    
-    # Nombre de fois où le modèle est pire que la baseline (ratio > 1)
-    worse_than_baseline[model] = (ratios > 1).sum()
-
-# Affichage des résultats
-print(f"{'Rank':<4} {'Model':<25} {'Arith Score':<10} {'Mean':<6} {'Std':<6} {'Min':<4} {'Q25':<6} {'Med':<6} {'Q75':<6} {'Max':<4} {'IQR':<6} {'Worse':<5}")
-print("-" * 115)
-
-# Tri par score arithmétique
-for i, (model, score) in enumerate(sorted(scores_arith.items(), key=lambda x: x[1]), 1):
-    arith_score = scores_arith[model]
-    mean_rank = mean_ranks[model]
-    std_rank = std_ranks[model]
-    min_rank = min_ranks[model]
-    q25_rank = q25_ranks[model]
-    median_rank = median_ranks[model]
-    q75_rank = q75_ranks[model]
-    max_rank = max_ranks[model]
-    iqr_rank = iqr_ranks[model]
-    worse_count = worse_than_baseline[model]
-    
-    print(f"{i:2d}. {model:<25} {arith_score:<10.3f} {mean_rank:<6.1f} {std_rank:<6.1f} {min_rank:<4.0f} {q25_rank:<6.1f} {median_rank:<6.1f} {q75_rank:<6.1f} {max_rank:<4.0f} {iqr_rank:<6.1f} {worse_count:<5.0f}")
-
-print(f"\nTotal models: {len(scores_arith)}")
-print(f"Total datasets: {len(df_ratios)}")
-
 
 # %%
 heatmap_data = df_ratios.drop(columns=['naive', 'seasonal_naive', 'domain', 'num_variates'])
 
 # Clipped at 3.0
-heatmap_clipped = heatmap_data.clip(upper=2.0)
+heatmap_clipped = heatmap_data.clip(upper=1.5)
 
 
 distances = pdist(heatmap_clipped, metric='euclidean')
@@ -131,9 +78,9 @@ plt.figure(figsize=(20, 25))
 sns.heatmap(heatmap_clustered, 
             annot=False,
             cmap='RdYlGn_r',
-            center=1.0,
+            center=0.5,
             vmin=0.01,
-            vmax=2.0,
+            vmax=1.5,
             cbar_kws={'label': 'Normalized MASE (clipped at 2.0)'},
             yticklabels=True)
 
@@ -169,11 +116,11 @@ datasets_10s = []
 for dataset in heatmap_clustered.index:
     if '/' in dataset:
         freq = dataset.split('/')[1]
-        if freq == '10S':
+        if freq == '10T':
             datasets_10s.append(dataset)
 
-print(f"Datasets with 10S frequency: {datasets_10s}")
-print(f"Total 10S datasets: {len(datasets_10s)}")
+print(f"Datasets with 10T frequency: {datasets_10s}")
+print(f"Total 10T datasets: {len(datasets_10s)}")
 
 
 model_performance_10s = {}
@@ -191,7 +138,6 @@ for model in model_columns:
 
 sorted_models = sorted(model_performance_10s.items(), key=lambda x: x[1])
 
-print("\nModel Performance on 10S frequency (lower is better):")
 print("=" * 60)
 for i, (model, mean_score) in enumerate(sorted_models, 1):
     print(f"{i:2d}. {model:<20} | Mean: {mean_score:.3f}")
@@ -202,26 +148,190 @@ print(f"\nTotal models: {len(sorted_models)}")
 best_model = sorted_models[0]
 worst_model = sorted_models[-1]
 
-print(f"\nBest model on 10S: {best_model[0]} ({best_model[1]:.3f})")
-print(f"Worst model on 10S: {worst_model[0]} ({worst_model[1]:.3f})")
-print(f"Performance gap: {worst_model[1] - best_model[1]:.3f}x")
+
 
 # %%
-models_by_year = {
-    2015: ['auto_arima', 'auto_ets', 'auto_theta'],
-    2017: ['deepar'],
-    2019: ['n_beats', 'tft'],
-    2022: ['d_linear', 'patch_tst'],
-    2023: ['i_transformer', 'tide'],
-    2024: ['chronos-small', 'chronos_base', 'chronos_large', 
-           'moirai_1.1_R_base_no_leak', 'moirai_1.1_R_large_no_leak', 'moirai_1.1_R_small_no_leak',
-           'timesfm', 'visionts']
+models_by_year= {
+    2015: ['naive', 'seasonal_naive', 'auto_arima', 'auto_ets', 'auto_theta'], 
+    
+    2017: ['deepar', 'feedforward'],  
+    2019: ['N-BEATS', 'tft', 'crossformer'],  
+    2022: ['DLinear', 'PatchTST', 'iTransformer', 'tide'],  
+    2024: [
+        
+        'Chronos_small', 'chronos_base', 'chronos_large', 
+        'chronos_bolt_small', 'chronos_bolt_base',
+        'Moirai_small', 'Moirai_base', 'Moirai_large',
+        'timesfm', 'timesfm_2_0_500m',
+        'YingLong_6m', 'YingLong_50m', 'YingLong_110m', 'YingLong_300m',
+        'TTM-R1-Zeroshot', 'TTM-R2-Zeroshot', 'TTM-R2-Finetuned',
+        'visionts', 'Lag-Llama', 'sundial_base_128m', 'Timer', 
+        'Toto_Open_Base_1.0', 'TiRex', 'tabpfn_ts', 'tempo_ensemble'
+    ]
+}
+
+models_by_type = {
+    'Statistical': ['naive', 'seasonal_naive', 'auto_arima', 'auto_ets', 'auto_theta'],
+    
+    'Deep_Learning_Classical': ['deepar', 'feedforward', 'N-BEATS', 'tft'],
+    
+    'Transformers': ['crossformer', 'PatchTST', 'iTransformer'],
+    
+    'Modern_Architectures': ['DLinear', 'tide'],  
+    
+    'Foundation_Models': [
+        'Chronos_small', 'chronos_base', 'chronos_large', 
+        'chronos_bolt_small', 'chronos_bolt_base',
+        'Moirai_small', 'Moirai_base', 'Moirai_large',
+        'timesfm', 'timesfm_2_0_500m',
+        'YingLong_6m', 'YingLong_50m', 'YingLong_110m', 'YingLong_300m',
+        'TTM-R1-Zeroshot', 'TTM-R2-Zeroshot', 'TTM-R2-Finetuned',
+        'visionts', 'Lag-Llama', 'sundial_base_128m', 'Timer', 
+        'Toto_Open_Base_1.0'
+    ],
+    
+    'Specialized_Advanced': ['TiRex', 'tabpfn_ts', 'tempo_ensemble']  
 }
 
 
+# %%
+year_ratios = {}
+
+for year, year_models in models_by_year.items():
+    available_models = [m for m in year_models if m in df_ratios.columns]
+    
+    if available_models:
+        year_ratios[year] = df_ratios[available_models].mean(axis=1)
+
+df_evolution = pd.DataFrame(year_ratios)
+
+n_datasets = len(df_evolution.index)
+n_cols = 5
+n_rows = 20
+
+fig, axes = plt.subplots(n_rows, n_cols, figsize=(20, 4*n_rows))
+axes = axes.flatten()
+
+for i, dataset in enumerate(df_evolution.index):
+    axes[i].plot(df_evolution.columns, df_evolution.loc[dataset], 
+                 'o-', linewidth=2, markersize=4)
+    axes[i].axhline(y=1.0, color='red', linestyle='--', alpha=0.7)
+    axes[i].set_title(dataset, fontsize=10)
+    axes[i].grid(True, alpha=0.3)
+    axes[i].set_ylabel('Ratio')
+
+for i in range(n_datasets, len(axes)):
+    axes[i].remove()
+
+plt.tight_layout()
+plt.show()
+
+# %%
+
+df_ratios['frequency'] = df_ratios.index.str.split('/').str[1]
+
+model_columns = [col for col in df_ratios.columns if col not in ['domain', 'num_variates', 'frequency']]
+
+
+domain_performance = {}
+for domain in df_ratios['domain'].unique():
+    domain_data = df_ratios[df_ratios['domain'] == domain]
+    domain_performance[domain] = domain_data[model_columns].mean()
+
+df_domain = pd.DataFrame(domain_performance).T
+
+plt.figure(figsize=(25, 6))
+sns.heatmap(df_domain, 
+            annot=True, 
+            fmt='.2f',
+            cmap='RdYlGn_r',
+            center=1.0,
+            vmin=0.5,
+            vmax=1.5)
+plt.title('Performance by Domain')
+plt.xlabel('Models')
+plt.ylabel('Domains')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.show()
+
+
+freq_performance = {}
+for freq in df_ratios['frequency'].unique():
+    freq_data = df_ratios[df_ratios['frequency'] == freq]
+    freq_performance[freq] = freq_data[model_columns].mean()
+
+df_freq = pd.DataFrame(freq_performance).T
+
+plt.figure(figsize=(25, 8))
+sns.heatmap(df_freq, 
+            annot=True, 
+            fmt='.2f',
+            cmap='RdYlGn_r',
+            center=1.0,
+            vmin=0.5,
+            vmax=1.5)
+plt.title('Performance by frequency')
+plt.xlabel('Models')
+plt.ylabel('Frequencies')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.show()
 
 # %% [markdown]
 # MODEL ANALYSIS 
+
+# %%
+scores_arith = {}
+mean_ranks = {}
+std_ranks = {}
+min_ranks = {}
+q25_ranks = {}
+median_ranks = {}
+q75_ranks = {}
+max_ranks = {}
+iqr_ranks = {}
+worse_than_baseline = {} 
+
+for model in model_columns:
+    ratios = df_ratios[model]
+    ranks = df_ranks[model]
+    
+
+    scores_arith[model] = ratios.mean()
+    mean_ranks[model] = ranks.mean()
+    std_ranks[model] = ranks.std()
+    # min_ranks[model] = ranks.min()
+    q25_ranks[model] = ranks.quantile(0.25)
+    median_ranks[model] = ranks.median()
+    q75_ranks[model] = ranks.quantile(0.75)
+    max_ranks[model] = ranks.max()
+    iqr_ranks[model] = q75_ranks[model] - q25_ranks[model]
+    
+    #Number of times worst than baseline
+    worse_than_baseline[model] = (ratios > 1).sum()
+
+print(f"{'Rank':<4} {'Model':<25} {'Arith Score':<10} {'Mean':<6} {'Std':<6} {'Q25':<6} {'Med':<6} {'Q75':<6} {'Max':<4} {'IQR':<6} {'Worse':<5}")
+print("-" * 115)
+
+
+for i, (model, score) in enumerate(sorted(scores_arith.items(), key=lambda x: x[1]), 1):
+    arith_score = scores_arith[model]
+    mean_rank = mean_ranks[model]
+    std_rank = std_ranks[model]
+    # min_rank = min_ranks[model]
+    q25_rank = q25_ranks[model]
+    median_rank = median_ranks[model]
+    q75_rank = q75_ranks[model]
+    max_rank = max_ranks[model]
+    iqr_rank = iqr_ranks[model]
+    worse_count = worse_than_baseline[model]
+    
+    print(f"{i:2d}. {model:<25} {arith_score:<10.3f} {mean_rank:<6.1f} {std_rank:<6.1f} {q25_rank:<6.1f} {median_rank:<6.1f} {q75_rank:<6.1f} {max_rank:<4.0f} {iqr_rank:<6.1f} {worse_count:<5.0f}")
+
+print(f"\nTotal models: {len(scores_arith)}")
+print(f"Total datasets: {len(df_ratios)}")
+
 
 # %%
 
@@ -265,10 +375,7 @@ for i, (model_name, worst_30_rate) in enumerate(results_worst, 1):
 
 print(f"\nTotal models: {len(results_worst)}")
 
-# %% [markdown]
-# Count worst than baseline
 
-# %%
 
 
 
