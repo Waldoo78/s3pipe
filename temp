@@ -1,3 +1,6 @@
+# %% [markdown]
+# # **Time Series Forecasting Models Analysis**
+
 # %%
 import os
 import numpy as np
@@ -8,203 +11,361 @@ import seaborn as sns
 from scipy.cluster.hierarchy import linkage, leaves_list
 from scipy.spatial.distance import pdist
 
+
+# %% [markdown]
+# # *Datasets Introduction*
+
+# %% [markdown]
+# | Dataset | Source | Domain | Frequency | # Series | Avg | Min | Max | # Obs | Target Variates | Pred Length(S) | Windows | Pred Length(M) | Windows | Pred Length(L) | Windows |
+# |---------|---------|---------|-----------|----------|-----|-----|-----|-------|----------------|----------------|---------|----------------|---------|----------------|---------|
+# | Jena Weather | Autoformer (Wu et al., 2021) | Nature | 10T | 1 | 52,704 | 52,704 | 52,704 | 52,704 | 21 | 48 | 20 | 480 | 11 | 720 | 8 |
+# | Jena Weather | Autoformer (Wu et al., 2021) | Nature | H | 1 | 8,784 | 8,784 | 8,784 | 8,784 | 21 | 48 | 19 | 480 | 2 | 720 | 2 |
+# | Jena Weather | Autoformer (Wu et al., 2021) | Nature | D | 1 | 366 | 366 | 366 | 366 | 21 | 30 | 2 | | | | |
+# | BizITObs - Application | AutoMixer (Palaskar et al., 2024) | Web/CloudOps | 10S | 1 | 8,834 | 8,834 | 8,834 | 8,834 | 2 | 60 | 15 | 600 | 2 | 900 | 1 |
+# | BizITObs - Service | AutoMixer (Palaskar et al., 2024) | Web/CloudOps | 10S | 21 | 8,835 | 8,835 | 8,835 | 185,535 | 2 | 60 | 15 | 600 | 2 | 900 | 1 |
+# | BizITObs - L2C | AutoMixer (Palaskar et al., 2024) | Web/CloudOps | 5T | 1 | 31,968 | 31,968 | 31,968 | 31,968 | 7 | 48 | 20 | 480 | 7 | 720 | 5 |
+# | BizITObs - L2C | AutoMixer (Palaskar et al., 2024) | Web/CloudOps | H | 1 | 2,664 | 2,664 | 2,664 | 2,664 | 7 | 48 | 6 | 480 | 1 | 720 | 1 |
+# | Bitbrains - Fast Storage | Grid Workloads Archive (Shen et al., 2015) | Web/CloudOps | 5T | 1,250 | 8,640 | 8,640 | 8,640 | 10,800,000 | 2 | 48 | 18 | 480 | 2 | 720 | 2 |
+# | Bitbrains - Fast Storage | Grid Workloads Archive (Shen et al., 2015) | Web/CloudOps | H | 1,250 | 721 | 721 | 721 | 901,250 | 2 | 48 | 2 | | | | |
+# | Bitbrains - rnd | Grid Workloads Archive (Shen et al., 2015) | Web/CloudOps | 5T | 500 | 8,640 | 8,640 | 8,640 | 4,320,000 | 2 | 48 | 18 | 480 | 2 | 720 | 2 |
+# | Bitbrains - rnd | Grid Workloads Archive (Shen et al., 2015) | Web/CloudOps | H | 500 | 720 | 720 | 720 | 360,000 | 2 | 48 | 2 | | | | |
+# | Restaurant | Recruit Rest. Comp. (Howard et al., 2017) | Sales | D | 807 | 358 | 67 | 478 | 289,303 | 1 | 30 | 1 | | | | |
+# | ETT1 | Informer (Zhou et al., 2020) | Energy | 15T | 1 | 69,680 | 69,680 | 69,680 | 69,680 | 7 | 48 | 20 | 480 | 15 | 720 | 10 |
+# | ETT1 | Informer (Zhou et al., 2020) | Energy | H | 1 | 17,420 | 17,420 | 17,420 | 17,420 | 7 | 48 | 20 | 480 | 4 | 720 | 3 |
+# | ETT1 | Informer (Zhou et al., 2020) | Energy | D | 1 | 725 | 725 | 725 | 725 | 7 | 30 | 3 | | | | |
+# | ETT1 | Informer (Zhou et al., 2020) | Energy | W-THU | 1 | 103 | 103 | 103 | 103 | 7 | 8 | 2 | | | | |
+# | ETT2 | Informer (Zhou et al., 2020) | Energy | 15T | 1 | 69,680 | 69,680 | 69,680 | 69,680 | 7 | 48 | 20 | 480 | 15 | 720 | 10 |
+# | ETT2 | Informer (Zhou et al., 2020) | Energy | H | 1 | 17,420 | 17,420 | 17,420 | 17,420 | 7 | 48 | 20 | 480 | 4 | 720 | 3 |
+# | ETT2 | Informer (Zhou et al., 2020) | Energy | D | 1 | 725 | 725 | 725 | 725 | 7 | 30 | 3 | | | | |
+# | ETT2 | Informer (Zhou et al., 2020) | Energy | W-THU | 1 | 103 | 103 | 103 | 103 | 7 | 8 | 2 | | | | |
+# | Loop Seattle | LibCity (Wang et al., 2023a) | Transport | 5T | 323 | 105,120 | 105,120 | 105,120 | 33,953,760 | 1 | 48 | 20 | 480 | 20 | 720 | 15 |
+# | Loop Seattle | LibCity (Wang et al., 2023a) | Transport | H | 323 | 8,760 | 8,760 | 8,760 | 2,829,480 | 1 | 48 | 19 | 480 | 2 | 720 | 2 |
+# | Loop Seattle | LibCity (Wang et al., 2023a) | Transport | D | 323 | 365 | 365 | 365 | 117,895 | 1 | 30 | 2 | | | | |
+# | SZ-Taxi | LibCity (Wang et al., 2023a) | Transport | 15T | 156 | 2,976 | 2,976 | 2,976 | 464,256 | 1 | 48 | 7 | 480 | 1 | 720 | 1 |
+# | SZ-Taxi | LibCity (Wang et al., 2023a) | Transport | H | 156 | 744 | 744 | 744 | 116,064 | 1 | 48 | 2 | | | | |
+# | M_DENSE | LibCity (Wang et al., 2023a) | Transport | H | 30 | 17,520 | 17,520 | 17,520 | 525,600 | 1 | 48 | 20 | 480 | 4 | 720 | 3 |
+# | M_DENSE | LibCity (Wang et al., 2023a) | Transport | D | 30 | 730 | 730 | 730 | 21,900 | 1 | 30 | 3 | | | | |
+# | Solar | LSTNet (Lai et al., 2017) | Energy | 10T | 137 | 52,560 | 52,560 | 52,560 | 7,200,720 | 1 | 48 | 20 | 480 | 11 | 720 | 8 |
+# | Solar | LSTNet (Lai et al., 2017) | Energy | H | 137 | 8,760 | 8,760 | 8,760 | 1,200,120 | 1 | 48 | 19 | 480 | 2 | 720 | 2 |
+# | Solar | LSTNet (Lai et al., 2017) | Energy | D | 137 | 365 | 365 | 365 | 50,005 | 1 | 30 | 2 | | | | |
+# | Solar | LSTNet (Lai et al., 2017) | Energy | W-FRI | 137 | 52 | 52 | 52 | 7,124 | 1 | 8 | 1 | | | | |
+# | Hierarchical Sales | Mancuso et al. (2020) | Sales | D | 118 | 1,825 | 1,825 | 1,825 | 215,350 | 1 | 30 | 7 | | | | |
+# | Hierarchical Sales | Mancuso et al. (2020) | Sales | W-WED | 118 | 260 | 260 | 260 | 30,680 | 1 | 8 | 4 | | | | |
+# | M4 Yearly | Monash (Godahewa et al., 2021) | Econ/Fin | A-DEC | 22,974 | 37 | 19 | 284 | 845,109 | 1 | 6 | 1 | | | | |
+# | M4 Quarterly | Monash (Godahewa et al., 2021) | Econ/Fin | Q-DEC | 24,000 | 100 | 24 | 874 | 2,406,108 | 1 | 8 | 1 | | | | |
+# | M4 Monthly | Monash (Godahewa et al., 2021) | Econ/Fin | M | 48,000 | 234 | 60 | 2,812 | 11,246,411 | 1 | 18 | 1 | | | | |
+# | M4 Weekly | Monash (Godahewa et al., 2021) | Econ/Fin | W-SUN | 359 | 1,035 | 93 | 2,610 | 371,579 | 1 | 13 | 1 | | | | |
+# | M4 Daily | Monash (Godahewa et al., 2021) | Econ/Fin | D | 4,227 | 2,371 | 107 | 9,933 | 10,023,836 | 1 | 14 | 1 | | | | |
+# | M4 Hourly | Monash (Godahewa et al., 2021) | Econ/Fin | H | 414 | 902 | 748 | 1,008 | 373,372 | 1 | 48 | 2 | | | | |
+# | Hospital | Monash (Godahewa et al., 2021) | Healthcare | M | 767 | 84 | 84 | 84 | 64,428 | 1 | 12 | 1 | | | | |
+# | COVID Deaths | Monash (Godahewa et al., 2021) | Healthcare | D | 266 | 212 | 212 | 212 | 56,392 | 1 | 30 | 1 | | | | |
+# | US Births | Monash (Godahewa et al., 2021) | Healthcare | D | 1 | 7,305 | 7,305 | 7,305 | 7,305 | 1 | 30 | 20 | | | | |
+# | US Births | Monash (Godahewa et al., 2021) | Healthcare | W-TUE | 1 | 1,043 | 1,043 | 1,043 | 1,043 | 1 | 8 | 14 | | | | |
+# | US Births | Monash (Godahewa et al., 2021) | Healthcare | M | 1 | 240 | 240 | 240 | 240 | 1 | 12 | 2 | | | | |
+# | Saugeen | Monash (Godahewa et al., 2021) | Nature | D | 1 | 23,741 | 23,741 | 23,741 | 23,741 | 1 | 30 | 20 | | | | |
+# | Saugeen | Monash (Godahewa et al., 2021) | Nature | W-THU | 1 | 3,391 | 3,391 | 3,391 | 3,391 | 1 | 8 | 20 | | | | |
+# | Saugeen | Monash (Godahewa et al., 2021) | Nature | M | 1 | 780 | 780 | 780 | 780 | 1 | 12 | 7 | | | | |
+# | Temperature Rain | Monash (Godahewa et al., 2021) | Nature | D | 32,072 | 725 | 725 | 725 | 23,252,400 | 1 | 30 | 3 | | | | |
+# | KDD Cup 2018 | Monash (Godahewa et al., 2021) | Nature | H | 270 | 10,898 | 9,504 | 10,920 | 2,942,364 | 1 | 48 | 20 | 480 | 2 | 720 | 2 |
+# | KDD Cup 2018 | Monash (Godahewa et al., 2021) | Nature | D | 270 | 455 | 396 | 455 | 122,791 | 1 | 30 | 2 | | | | |
+# | Car Parts | Monash (Godahewa et al., 2021) | Sales | M | 2,674 | 51 | 51 | 51 | 136,374 | 1 | 12 | 1 | | | | |
+# | Electricity | UCI ML Archive (Trindade, 2015) | Energy | 15T | 370 | 140,256 | 140,256 | 140,256 | 51,894,720 | 1 | 48 | 20 | 480 | 20 | 720 | 20 |
+# | Electricity | UCI ML Archive (Trindade, 2015) | Energy | H | 370 | 35,064 | 35,064 | 35,064 | 12,973,680 | 1 | 48 | 20 | 480 | 8 | 720 | 5 |
+# | Electricity | UCI ML Archive (Trindade, 2015) | Energy | D | 370 | 1,461 | 1,461 | 1,461 | 540,570 | 1 | 30 | 5 | | | | |
+# | Electricity | UCI ML Archive (Trindade, 2015) | Energy | W-FRI | 370 | 208 | 208 | 208 | 76,960 | 1 | 8 | 3 | | | | |
+
 # %%
 gift_results_folder='/home/wbouainouche/Samformer_distillation/GIFT-Eval/results'
 
 # %%
 models = {}
 for model in os.listdir(gift_results_folder):
-    if os.path.isdir(os.path.join(gift_results_folder, model)):
-        csv_path = os.path.join(gift_results_folder, model, 'all_results.csv')
-        if os.path.exists(csv_path):
-            df = pd.read_csv(csv_path)
-            models[model] = df.sort_values('dataset').reset_index(drop=True)
+    if model != 'MLP':
+        if os.path.isdir(os.path.join(gift_results_folder, model)):
+            csv_path = os.path.join(gift_results_folder, model, 'all_results.csv')
+            if os.path.exists(csv_path):
+                df = pd.read_csv(csv_path)
+                models[model] = df.sort_values('dataset').reset_index(drop=True)
+
+# %%
+domain_series = pd.Series(models['naive']['domain'])
+num_variates_series = pd.Series(models['naive']['num_variates'])
+ratio_b = models['naive']["eval_metrics/MASE[0.5]"] / models['seasonal_naive']["eval_metrics/MASE[0.5]"]
+
+# %%
+bitbrains_results = models['seasonal_naive'][models['seasonal_naive']['dataset'] =='bitbrains_fast_storage/H/short']
+df_MLP = pd.read_csv("/home/wbouainouche/Samformer_distillation/GIFT-Eval/results/iTransformer/all_results.csv")
+ratio = df_MLP['eval_metrics/MASE[0.5]'].iloc[0] / bitbrains_results['eval_metrics/MASE[0.5]'].iloc[0]
+print(ratio)
+
 
 # %% [markdown]
-# DATASET DRIVEN ANALYSIS 
+# # Ratio with naive baseline 
 
 # %%
-ratio = models['naive']["eval_metrics/MASE[0.5]"] / models['seasonal_naive']["eval_metrics/MASE[0.5]"]
-
-naive_better_mask = ratio < 1
-datasets_naive_wins = models['naive'].loc[naive_better_mask, 'dataset']
-
-print("Datasets where Naive beats Seasonal (MASE ratio < 1):")
-print(datasets_naive_wins.tolist())
-
-# %%
-best_baseline = np.where(ratio < 1, 
+best_baseline = np.where(ratio_b < 1, 
                         models['naive']["eval_metrics/MASE[0.5]"], 
                         models['seasonal_naive']["eval_metrics/MASE[0.5]"])
 
-all_ratios = {}
+all_ratios_baseline = {}
 for model in models.keys():
-    ratios = models[model]["eval_metrics/MASE[0.5]"] / best_baseline
-    all_ratios[model] = ratios
+    ratios_b = models[model]["eval_metrics/MASE[0.5]"] / best_baseline
+    all_ratios_baseline[model] = ratios_b-1
 
-df_ratios = pd.DataFrame(all_ratios)
+df_ratios_baseline = pd.DataFrame(all_ratios_baseline)
+df_ratios_baseline['domain'] = domain_series.values
+df_ratios_baseline['num_variates'] = num_variates_series.values
+df_ratios_baseline.index = models['naive']['dataset']  
+df_ratios_baseline['frequency'] = df_ratios_baseline.index.str.split('/').str[1]  
 
-df_ratios.index = models['naive']['dataset']
-
-df_ratios = df_ratios.reset_index(drop=True)
-domain_series = pd.Series(models['naive']['domain'])
-num_variates_series = pd.Series(models['naive']['num_variates'])
-
-df_ratios['domain'] = domain_series.values
-df_ratios['num_variates'] = num_variates_series.values
-
-df_ratios.index = models['naive']['dataset']
-
-model_columns = [col for col in df_ratios.columns if col not in ['domain', 'num_variates']]
-
-
-df_ranks = df_ratios[model_columns].rank(axis=1, method='min')
+model_columns_baseline = [col for col in df_ratios_baseline.columns if col not in ['domain', 'num_variates', 'frequency']]
+df_ranks_baseline = df_ratios_baseline[model_columns_baseline].rank(axis=1, method='min')
 
 # %%
-heatmap_data = df_ratios.drop(columns=['naive', 'seasonal_naive', 'domain', 'num_variates'])
+all_ratios_PatchTST = {}
+for model in models.keys():
+   ratios_PatchTST = models[model]["eval_metrics/MASE[0.5]"] / models["PatchTST"]["eval_metrics/MASE[0.5]"]
+   all_ratios_PatchTST[model] = ratios_PatchTST - 1  
 
-# Clipped at 3.0
-heatmap_clipped = heatmap_data.clip(upper=1.5)
+df_ratios_PatchTST = pd.DataFrame(all_ratios_PatchTST)
+df_ratios_PatchTST['domain'] = domain_series.values
+df_ratios_PatchTST['num_variates'] = num_variates_series.values
+df_ratios_PatchTST.index = models['naive']['dataset']
+df_ratios_PatchTST['frequency'] = df_ratios_PatchTST.index.str.split('/').str[1]
+
+model_columns_PatchTST = [col for col in df_ratios_PatchTST.columns if col not in ['domain', 'num_variates', 'frequency']]
+df_ranks_PatchTST = df_ratios_PatchTST[model_columns_PatchTST].rank(axis=1, method='min')
+
+# %% [markdown]
+# # Dataset Analysis
+
+# %%
+heatmap_data_baseline = df_ratios_baseline.drop(columns=['naive', 'seasonal_naive', 'domain', 'num_variates', 'frequency','crossformer'])
 
 
-distances = pdist(heatmap_clipped, metric='euclidean')
-linkage_matrix = linkage(distances, method='ward')
-new_order = leaves_list(linkage_matrix)
+model_order_b = heatmap_data_baseline.mean().sort_values(ascending=False).index
+
+ 
+dataset_order_b = heatmap_data_baseline.mean(axis=1).sort_values(ascending=False).index
 
 
-heatmap_clustered = heatmap_clipped.iloc[new_order]
+heatmap_sorted_baseline = heatmap_data_baseline.loc[dataset_order_b, model_order_b]
+
 
 plt.figure(figsize=(20, 25))
-sns.heatmap(heatmap_clustered, 
+sns.heatmap(heatmap_sorted_baseline, 
             annot=False,
-            cmap='RdYlGn_r',
-            center=0.5,
-            vmin=0.01,
-            vmax=1.5,
-            cbar_kws={'label': 'Normalized MASE (clipped at 2.0)'},
-            yticklabels=True)
+            cmap='seismic',
+            center=0,
+            vmax=1,
+            vmin=-1)
 
-plt.title('Performance Heatmap: Models vs Datasets (Clustered)', fontsize=16)
-plt.xlabel('Models', fontsize=12)
-plt.ylabel('Datasets', fontsize=12)
+plt.title('Performance Heatmap-baseline')
 plt.xticks(rotation=45, ha='right')
-plt.yticks(rotation=0, fontsize=10)
-plt.tight_layout()
 plt.show()
+
+# %%
+heatmap_data_PatchTST = df_ratios_PatchTST.drop(columns=['naive', 'seasonal_naive', 'domain', 'num_variates','frequency','crossformer','auto_theta', 'auto_ets','auto_arima', 'deepar', 'feedforward', 'tft', 'N-BEATS', 'DLinear', 'tide'])
+
+model_order_PatchTST = heatmap_data_PatchTST.mean().sort_values(ascending=False).index
+
+dataset_order_PatchTST = heatmap_data_PatchTST.mean(axis=1).sort_values(ascending=False).index
+
+heatmap_sorted_PatchTST = heatmap_data_PatchTST.loc[dataset_order_PatchTST, model_order_PatchTST]
+
+plt.figure(figsize=(20, 25))
+sns.heatmap(heatmap_sorted_PatchTST, 
+           annot=False,
+           cmap='seismic',
+           center=0,
+           vmax=1,
+           vmin=-1)
+
+plt.title('Performance Heatmap-PatchTST')
+plt.xticks(rotation=45, ha='right')
+plt.show()
+
+# %% [markdown]
+# ## Dataset Difficulty Ranking
+# 
+# **Metric Definition**: Dataset difficulty is measured as the arithmetic mean of normalized MASE across all models.
 
 # %%
 dataset_difficulty_arith = {}
 
-for dataset in heatmap_clustered.index:
-    row = heatmap_clustered.loc[dataset]
+for dataset in heatmap_sorted_baseline.index:
+    row = heatmap_sorted_baseline.loc[dataset]
     dataset_difficulty_arith[dataset] = np.mean(row)
 
 sorted_difficulty = sorted(dataset_difficulty_arith.items(), key=lambda x: x[1], reverse=True)
 
-print("Ranking Difficulty Dataset:")
-print("=" * 70)
 
+data = []
 for i, (dataset, mean_score) in enumerate(sorted_difficulty, 1):
-    row = heatmap_clustered.loc[dataset]
+    row = heatmap_sorted_baseline.loc[dataset]
     std_score = np.std(row)
-    print(f"{i:2d}. {dataset:<40} Mean: {mean_score:.3f} | Std: {std_score:.3f}")
+    data.append({
+        'Rank': i,
+        'Dataset': dataset,
+        'Mean': round(mean_score, 3),
+        'Std': round(std_score, 3)
+    })
 
+df_difficulty = pd.DataFrame(data)
+
+print("Dataset Difficulty Ranking:")
+print("=" * 70)
+print(df_difficulty.to_string(index=False))
 print(f"\nTotal datasets: {len(sorted_difficulty)}")
 
 # %%
-datasets_10s = []
-for dataset in heatmap_clustered.index:
-    if '/' in dataset:
-        freq = dataset.split('/')[1]
-        if freq == '10T':
-            datasets_10s.append(dataset)
+def freq_analysis(freq):
+    datasets_freq = []
+    for dataset in heatmap_sorted_baseline.index:
+        if '/' in dataset:
+            fre = dataset.split('/')[1]
+            if fre == freq:
+                datasets_freq.append(dataset)
 
-print(f"Datasets with 10T frequency: {datasets_10s}")
-print(f"Total 10T datasets: {len(datasets_10s)}")
-
-
-model_performance_10s = {}
-
-model_columns = [col for col in heatmap_clustered.columns if col not in ['domain', 'num_variates']]
-
-for model in model_columns:
-    scores_10s = []
-    for dataset in datasets_10s:
-        score = heatmap_clustered.loc[dataset, model]
-        scores_10s.append(score)
-    
-    model_performance_10s[model] = np.mean(scores_10s)
+    print(f"Datasets with {freq} frequency: {datasets_freq}")
+    print(f"Total {freq} datasets: {len(datasets_freq)}")
 
 
-sorted_models = sorted(model_performance_10s.items(), key=lambda x: x[1])
+    model_performance_freq = {}
 
-print("=" * 60)
-for i, (model, mean_score) in enumerate(sorted_models, 1):
-    print(f"{i:2d}. {model:<20} | Mean: {mean_score:.3f}")
+    model_columns = [col for col in heatmap_sorted_baseline.columns if col not in ['domain', 'num_variates']]
 
-print(f"\nTotal models: {len(sorted_models)}")
-
-
-best_model = sorted_models[0]
-worst_model = sorted_models[-1]
-
-
-
-# %%
-models_by_year= {
-    2015: ['naive', 'seasonal_naive', 'auto_arima', 'auto_ets', 'auto_theta'], 
-    
-    2017: ['deepar', 'feedforward'],  
-    2019: ['N-BEATS', 'tft', 'crossformer'],  
-    2022: ['DLinear', 'PatchTST', 'iTransformer', 'tide'],  
-    2024: [
+    for model in model_columns:
+        scores_freq = []
+        for dataset in datasets_freq:
+            score = heatmap_sorted_baseline.loc[dataset, model]
+            scores_freq.append(score)
         
-        'Chronos_small', 'chronos_base', 'chronos_large', 
-        'chronos_bolt_small', 'chronos_bolt_base',
-        'Moirai_small', 'Moirai_base', 'Moirai_large',
-        'timesfm', 'timesfm_2_0_500m',
-        'YingLong_6m', 'YingLong_50m', 'YingLong_110m', 'YingLong_300m',
-        'TTM-R1-Zeroshot', 'TTM-R2-Zeroshot', 'TTM-R2-Finetuned',
-        'visionts', 'Lag-Llama', 'sundial_base_128m', 'Timer', 
-        'Toto_Open_Base_1.0', 'TiRex', 'tabpfn_ts', 'tempo_ensemble'
-    ]
-}
+        model_performance_freq[model] = np.mean(scores_freq)
 
-models_by_type = {
-    'Statistical': ['naive', 'seasonal_naive', 'auto_arima', 'auto_ets', 'auto_theta'],
-    
-    'Deep_Learning_Classical': ['deepar', 'feedforward', 'N-BEATS', 'tft'],
-    
-    'Transformers': ['crossformer', 'PatchTST', 'iTransformer'],
-    
-    'Modern_Architectures': ['DLinear', 'tide'],  
-    
-    'Foundation_Models': [
-        'Chronos_small', 'chronos_base', 'chronos_large', 
-        'chronos_bolt_small', 'chronos_bolt_base',
-        'Moirai_small', 'Moirai_base', 'Moirai_large',
-        'timesfm', 'timesfm_2_0_500m',
-        'YingLong_6m', 'YingLong_50m', 'YingLong_110m', 'YingLong_300m',
-        'TTM-R1-Zeroshot', 'TTM-R2-Zeroshot', 'TTM-R2-Finetuned',
-        'visionts', 'Lag-Llama', 'sundial_base_128m', 'Timer', 
-        'Toto_Open_Base_1.0'
-    ],
-    
-    'Specialized_Advanced': ['TiRex', 'tabpfn_ts', 'tempo_ensemble']  
-}
+
+    sorted_models = sorted(model_performance_freq.items(), key=lambda x: x[1])
+
+    print("=" * 60)
+    for i, (model, mean_score) in enumerate(sorted_models, 1):
+        print(f"{i:2d}. {model:<20} | Mean: {mean_score:.3f}")
+
+    print(f"\nTotal models: {len(sorted_models)}")
+
+
+    best_model = sorted_models[0]
+    worst_model = sorted_models[-1]
+
 
 
 # %%
-year_ratios = {}
+freq_analysis('D')
 
-for year, year_models in models_by_year.items():
-    available_models = [m for m in year_models if m in df_ratios.columns]
-    
+# %% [markdown]
+# # Temporal Evolution Analysis
+# 
+# ## Model Categories by Publication Year
+# 
+# | Year | Count | Models |
+# |------|-------|--------|
+# | 2015 | 5 | naive, seasonal_naive, auto_theta, auto_ets, auto_arima |
+# | 2017 | 1 | deepar |
+# | 2019 | 1 | tft |
+# | 2020 | 1 | N-BEATS |
+# | 2022 | 2 | PatchTST, DLinear |
+# | 2023 | 1 | tide |
+# | 2024 | 22 | YingLong_6m, YingLong_50m, YingLong_110m, YingLong_300m, tabpfn_ts, TTM-R1-Zeroshot, TTM-R2-Zeroshot, TTM-R2-Finetuned, Chronos_small, chronos_base, chronos_large, chronos_bolt_small, chronos_bolt_base, timesfm, timesfm_2_0_500m, Moirai_small, Moirai_base, Moirai_large, Lag-Llama, Timer, tempo_ensemble |
+# | 2025 | 4 | TiRex, Toto_Open_Base_1.0, sundial_base_128m, visionts |
+# 
+
+# %%
+models_by_years = {
+    2015: ['naive', 'seasonal_naive', 'auto_theta', 'auto_ets','auto_arima'],
+    2017: ['deepar'],
+    2019: ['tft'],
+    2020: ['N-BEATS'],
+    2022: ['PatchTST','DLinear'],
+    2023: ['tide'],
+    2024: [ 
+         'YingLong_6m', 'YingLong_50m', 'YingLong_110m', 'YingLong_300m',
+        'tabpfn_ts', 'TTM-R1-Zeroshot','TTM-R2-Zeroshot', 'TTM-R2-Finetuned','Chronos_small', 'chronos_base', 'chronos_large', 
+        'chronos_bolt_small', 'chronos_bolt_base','timesfm', 'timesfm_2_0_500m', 'Moirai_small', 'Moirai_base', 'Moirai_large',
+         'TTM-R2-Zeroshot', 'TTM-R2-Finetuned','Lag-Llama', 'Timer','tempo_ensemble'
+    ],
+    2025: ['TiRex','Toto_Open_Base_1.0', 'sundial_base_128m','visionts']
+}
+
+year_ratios = {}
+for year, year_models in models_by_years.items():
+    available_models = [m for m in year_models if m in df_ratios_baseline.columns]
     if available_models:
-        year_ratios[year] = df_ratios[available_models].mean(axis=1)
+        year_ratios[year] = df_ratios_baseline[available_models].mean(axis=1)
 
 df_evolution = pd.DataFrame(year_ratios)
 
+
+# %%
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
+import numpy as np
+
+def plot_domain_evolution_iqr(df_ratios, models_by_years):
+
+    model_to_year = {}
+    for year, models in models_by_years.items():
+        for model in models:
+            model_to_year[model] = year
+    
+    model_cols = [col for col in df_ratios.columns if col not in ['domain', 'num_variates']]
+    melted = df_ratios.reset_index().melt(
+        id_vars=['domain'],
+        value_vars=model_cols,
+        var_name='model',
+        value_name='ratio'
+    )
+    melted['year'] = melted['model'].map(model_to_year)
+    
+    stats = melted.groupby(['domain', 'year'])['ratio'].agg(
+        ['median', lambda x: x.quantile(0.25), lambda x: x.quantile(0.75)]
+    )
+    stats.columns = ['median', 'q25', 'q75']
+    stats = stats.reset_index()
+    
+    domain_order = melted.groupby('domain')['ratio'].median().sort_values().index
+    
+    for domain in domain_order:
+        plt.figure(figsize=(10, 5))
+        domain_data = stats[stats['domain'] == domain]
+        
+        plt.plot(domain_data['year'], domain_data['median'],
+                'o-', color='#1f77b4', linewidth=2,
+                markersize=8, label=f'{domain} (median)')
+        
+        plt.fill_between(domain_data['year'],
+                        domain_data['q25'],
+                        domain_data['q75'],
+                        color='#1f77b4', alpha=0.2,
+                        label='IQR (25-75%)')
+        
+        plt.axhline(1.0, color='red', linestyle='--', alpha=0.7, label='Baseline (1.0)')
+        plt.title(f'Performance Evolution: {domain}\nMedian with Interquartile Range', pad=15)
+        plt.xlabel('Model Publication Year')
+        plt.ylabel('Performance Ratio')
+        plt.xticks(list(models_by_years.keys()))
+        plt.grid(True, alpha=0.2)
+        
+        # # Set consistent y-axis limits across all plots
+        # plt.ylim(max(0, melted['ratio'].min()-0.1),
+        #         melted['ratio'].max()+0.1)
+        
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+
+plot_domain_evolution_iqr(df_ratios_baseline, models_by_years)
+
+# %%
 n_datasets = len(df_evolution.index)
 n_cols = 5
 n_rows = 20
@@ -226,29 +387,30 @@ for i in range(n_datasets, len(axes)):
 plt.tight_layout()
 plt.show()
 
+# %% [markdown]
+# # Domain and Frequency Analysis
+
 # %%
-
-df_ratios['frequency'] = df_ratios.index.str.split('/').str[1]
-
-model_columns = [col for col in df_ratios.columns if col not in ['domain', 'num_variates', 'frequency']]
-
-
 domain_performance = {}
-for domain in df_ratios['domain'].unique():
-    domain_data = df_ratios[df_ratios['domain'] == domain]
-    domain_performance[domain] = domain_data[model_columns].mean()
+for domain in df_ratios_baseline['domain'].unique():
+   domain_data = df_ratios_baseline[df_ratios_baseline['domain'] == domain]
+   domain_performance[domain] = domain_data[model_columns_baseline].mean()
 
 df_domain = pd.DataFrame(domain_performance).T
 
+domain_order = df_domain.mean(axis=1).sort_values(ascending=False).index
+
+df_domain = df_domain.loc[domain_order, model_order_b]
+
 plt.figure(figsize=(25, 6))
 sns.heatmap(df_domain, 
-            annot=True, 
-            fmt='.2f',
-            cmap='RdYlGn_r',
-            center=1.0,
-            vmin=0.5,
-            vmax=1.5)
-plt.title('Performance by Domain')
+           annot=True, 
+           fmt='.2f',
+           cmap='seismic',
+           center=0,
+           vmin=-1,
+           vmax=1)
+plt.title('Performance by Domain-baseline')
 plt.xlabel('Models')
 plt.ylabel('Domains')
 plt.xticks(rotation=45, ha='right')
@@ -256,22 +418,86 @@ plt.tight_layout()
 plt.show()
 
 
-freq_performance = {}
-for freq in df_ratios['frequency'].unique():
-    freq_data = df_ratios[df_ratios['frequency'] == freq]
-    freq_performance[freq] = freq_data[model_columns].mean()
+# %%
+df_ratios_PatchTST['frequency'] = df_ratios_PatchTST.index.str.split('/').str[1]
+model_columns_PatchTST = [col for col in df_ratios_PatchTST.columns if col not in ['domain', 'num_variates', 'frequency', 'naive', 'seasonal_naive', 'crossformer', 'auto_theta', 'auto_ets', 'auto_arima', 'deepar', 'feedforward', 'tft', 'N-BEATS', 'DLinear', 'tide']]
 
-df_freq = pd.DataFrame(freq_performance).T
+domain_performance_PatchTST = {}
+for domain in df_ratios_PatchTST['domain'].unique():
+  domain_data_PatchTST = df_ratios_PatchTST[df_ratios_PatchTST['domain'] == domain]
+  domain_performance_PatchTST[domain] = domain_data_PatchTST[model_columns_PatchTST].mean()
+
+df_domain_PatchTST = pd.DataFrame(domain_performance_PatchTST).T
+
+domain_order_PatchTST = df_domain_PatchTST.mean(axis=1).sort_values(ascending=False).index
+
+df_domain_PatchTST = df_domain_PatchTST.loc[domain_order_PatchTST, model_order_PatchTST]
+
+plt.figure(figsize=(25, 6))
+sns.heatmap(df_domain_PatchTST, 
+          annot=True, 
+          fmt='.2f',
+          cmap='seismic',
+          center=0,
+          vmin=-1,
+          vmax=1)
+plt.title('Performance by Domain-PatchTST')
+plt.xlabel('Models')
+plt.ylabel('Domains')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.show()
+
+# %%
+freq_performance_baseline = {}
+for freq in df_ratios_baseline['frequency'].unique():
+ freq_data_baseline = df_ratios_baseline[df_ratios_baseline['frequency'] == freq]
+ freq_performance_baseline[freq] = freq_data_baseline[model_columns_baseline].mean()
+
+df_freq_baseline = pd.DataFrame(freq_performance_baseline).T
+
+model_order_freq_baseline = df_freq_baseline.mean().sort_values(ascending=False).index
+freq_order_baseline = df_freq_baseline.mean(axis=1).sort_values(ascending=False).index
+
+df_freq_baseline = df_freq_baseline.loc[freq_order_baseline, model_order_b]
 
 plt.figure(figsize=(25, 8))
-sns.heatmap(df_freq, 
-            annot=True, 
-            fmt='.2f',
-            cmap='RdYlGn_r',
-            center=1.0,
-            vmin=0.5,
-            vmax=1.5)
-plt.title('Performance by frequency')
+sns.heatmap(df_freq_baseline, 
+         annot=True, 
+         fmt='.2f',
+         cmap='seismic',
+         center=0,
+         vmin=-1,
+         vmax=1)
+plt.title('Performance by Frequency-baseline')
+plt.xlabel('Models')
+plt.ylabel('Frequencies')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.show()
+
+# %%
+freq_performance_PatchTST = {}
+for freq in df_ratios_PatchTST['frequency'].unique():
+  freq_data_PatchTST = df_ratios_PatchTST[df_ratios_PatchTST['frequency'] == freq]
+  freq_performance_PatchTST[freq] = freq_data_PatchTST[model_columns_PatchTST].mean()
+
+df_freq_PatchTST = pd.DataFrame(freq_performance_PatchTST).T
+
+model_order_freq_PatchTST = df_freq_PatchTST.mean().sort_values(ascending=False).index
+freq_order_PatchTST = df_freq_PatchTST.mean(axis=1).sort_values(ascending=False).index
+
+df_freq_PatchTST = df_freq_PatchTST.loc[freq_order_PatchTST, model_order_PatchTST]
+
+plt.figure(figsize=(25, 8))
+sns.heatmap(df_freq_PatchTST, 
+          annot=True, 
+          fmt='.2f',
+          cmap='seismic',
+          center=0,
+          vmin=-1,
+          vmax=1)
+plt.title('Performance by Frequency-PatchTST')
 plt.xlabel('Models')
 plt.ylabel('Frequencies')
 plt.xticks(rotation=45, ha='right')
@@ -279,70 +505,144 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# MODEL ANALYSIS 
+# # Model Type Analysis
+# 
+# ## Model Categories by Type
+# 
+#  | Type | Models |
+#  |------|--------|
+# | Statistical | naive, seasonal_naive, auto_arima, auto_ets, auto_theta |
+# | Deep Learning Classical | deepar, PatchTST, MLP_PatchTST_2, tide, tft, feedforward, crossformer, N-BEATS, DLinear |
+#  | Pretrained | TiRex, Toto_Open_Base_1.0, YingLong_6m, YingLong_50m, YingLong_110m, YingLong_300m, tabpfn_ts, Chronos_small, chronos_base, chronos_large, chronos_bolt_small, chronos_bolt_base, timesfm, timesfm_2_0_500m, sundial_base_128m, Moirai_small, Moirai_base, Moirai_large, TTM-R1-Zeroshot, TTM-R2-Zeroshot, TTM-R2-Finetuned, visionts, Lag-Llama, Timer |
+# | Fine-Tuned | tempo_ensemble, TTM-R2-Finetuned |
+
+# %% [markdown]
+# # Comprehensive Model Evaluation
+#  
+# ## Performance Metrics Definitions
+# 
+# - **Arithmetic Score**: Mean normalized MASE across all datasets
+# - **Failure Rate**: Proportion of datasets where model performs worse than baseline (ratio > 1.0)
+# - **Ranking Statistics**: Mean, median, quartiles of performance ranks across datasets
+# - **IQR**: Interquartile range of ranks, indicating consistency
+# 
 
 # %%
 scores_arith = {}
 mean_ranks = {}
 std_ranks = {}
-min_ranks = {}
 q25_ranks = {}
 median_ranks = {}
 q75_ranks = {}
 max_ranks = {}
 iqr_ranks = {}
-worse_than_baseline = {} 
+worse_than_baseline = {}
 
-for model in model_columns:
-    ratios = df_ratios[model]
-    ranks = df_ranks[model]
-    
+for model in model_columns_baseline:
+   ratios = df_ratios_baseline[model]
+   ranks = df_ranks_baseline[model]
+   
+   scores_arith[model] = ratios.mean()
+   mean_ranks[model] = ranks.mean()
+   std_ranks[model] = ranks.std()
+   q25_ranks[model] = ranks.quantile(0.25)
+   median_ranks[model] = ranks.median()
+   q75_ranks[model] = ranks.quantile(0.75)
+   max_ranks[model] = ranks.max()
+   iqr_ranks[model] = q75_ranks[model] - q25_ranks[model]
+   worse_than_baseline[model] = (ratios > 0).sum()
 
-    scores_arith[model] = ratios.mean()
-    mean_ranks[model] = ranks.mean()
-    std_ranks[model] = ranks.std()
-    # min_ranks[model] = ranks.min()
-    q25_ranks[model] = ranks.quantile(0.25)
-    median_ranks[model] = ranks.median()
-    q75_ranks[model] = ranks.quantile(0.75)
-    max_ranks[model] = ranks.max()
-    iqr_ranks[model] = q75_ranks[model] - q25_ranks[model]
-    
-    #Number of times worst than baseline
-    worse_than_baseline[model] = (ratios > 1).sum()
-
-print(f"{'Rank':<4} {'Model':<25} {'Arith Score':<10} {'Mean':<6} {'Std':<6} {'Q25':<6} {'Med':<6} {'Q75':<6} {'Max':<4} {'IQR':<6} {'Worse':<5}")
-print("-" * 115)
-
-
+performance_data = []
 for i, (model, score) in enumerate(sorted(scores_arith.items(), key=lambda x: x[1]), 1):
-    arith_score = scores_arith[model]
-    mean_rank = mean_ranks[model]
-    std_rank = std_ranks[model]
-    # min_rank = min_ranks[model]
-    q25_rank = q25_ranks[model]
-    median_rank = median_ranks[model]
-    q75_rank = q75_ranks[model]
-    max_rank = max_ranks[model]
-    iqr_rank = iqr_ranks[model]
-    worse_count = worse_than_baseline[model]
-    
-    print(f"{i:2d}. {model:<25} {arith_score:<10.3f} {mean_rank:<6.1f} {std_rank:<6.1f} {q25_rank:<6.1f} {median_rank:<6.1f} {q75_rank:<6.1f} {max_rank:<4.0f} {iqr_rank:<6.1f} {worse_count:<5.0f}")
+   arith_score = scores_arith[model]+1
+   failure_rate = worse_than_baseline[model] / len(df_ratios_baseline)
+   mean_rank = mean_ranks[model]
+   std_rank = std_ranks[model]
+   q25_rank = q25_ranks[model]
+   median_rank = median_ranks[model]
+   q75_rank = q75_ranks[model]
+   max_rank = max_ranks[model]
+   iqr_rank = iqr_ranks[model]
+   worse_count = worse_than_baseline[model]
+   
+   performance_data.append({
+       'Rank': i,
+       'Model': model,
+       'Arith_Score': round(arith_score, 3),
+       'Mean_Rank': round(mean_rank, 1),
+       'Std_Rank': round(std_rank, 1),
+       'Q25': round(q25_rank, 1),
+       'Median': round(median_rank, 1),
+       'Q75': round(q75_rank, 1),
+       'Max': int(max_rank),
+       'IQR': round(iqr_rank, 1),
+       'Worse_Count': int(worse_count),
+       'Failure_Rate': f"{failure_rate:.1%}"
+   })
 
-print(f"\nTotal models: {len(scores_arith)}")
-print(f"Total datasets: {len(df_ratios)}")
+df_performance = pd.DataFrame(performance_data)
 
+print("Comprehensive Model Evaluation:")
+print("=" * 120)
+print(df_performance.to_string(index=False))
+
+print(f"\nSummary:")
+print(f"Total models: {len(scores_arith)}")
+print(f"Total datasets: {len(df_ratios_baseline)}")
+
+
+# %% [markdown]
+# ## Composite Reliability Score
+# 
+# **Formula**: `Composite = Arithmetic_Score + Failure_Rate * 1.7`
+# 
+# Combines arithmetic performance with failure penalty to assess both accuracy and reliability.
 
 # %%
+composite_scores = {}
 
+for model in model_columns_baseline:
+  arith_score = scores_arith[model]
+  failure_rate = worse_than_baseline[model] / len(df_ratios_baseline)
+  failure_penalty = failure_rate * 1.7
+  composite_scores[model] = arith_score + failure_penalty
+
+composite_data = []
+for i, (model, composite_score) in enumerate(sorted(composite_scores.items(), key=lambda x: x[1]), 1):
+  arith_score = scores_arith[model]+1
+  failure_rate = worse_than_baseline[model] / len(df_ratios_baseline)
+  failure_penalty = failure_rate * 1.7
+  
+  composite_data.append({
+      'Rank': i,
+      'Model': model,
+      'Arith_Score': round(arith_score, 3),
+      'Failure_Score': round(failure_penalty, 3),
+      'Composite': round(composite_score+1, 3)
+  })
+
+df_composite = pd.DataFrame(composite_data)
+
+print("Composite Reliability Score:")
+print("=" * 60)
+print(df_composite.to_string(index=False))
+
+print(f"\nTotal models: {len(composite_scores)}")
+
+
+# %% [markdown]
+# ## Performance Tier Analysis
+# 
+# Models are categorized based on their frequency of appearing in top 30% vs bottom 30% across all datasets.
+# 
+
+# %%
 all_mase = pd.DataFrame({
     model: df['eval_metrics/MASE[0.5]'] 
     for model, df in models.items()
 })
 
-
-ranks = all_mase.rank(axis=1)  
-
+ranks = all_mase.rank(axis=1)
 n_models = len(models)
 top_30_pct_threshold = 0.3 * n_models  
 worst_30_pct_threshold = 0.7 * n_models
@@ -368,14 +668,72 @@ for i, (model_name, top_30_rate) in enumerate(results_top, 1):
 
 print(f"\nTotal models: {len(results_top)}")
 
-print("\n\nModels with highest Worst 30% rate:")
+print("\n\nModels with highest Bottom 30% rate:")
 print("=" * 50)
 for i, (model_name, worst_30_rate) in enumerate(results_worst, 1):
-    print(f"{i:2d}. {model_name:<25} | Worst30%: {worst_30_rate:.1%}")
+    print(f"{i:2d}. {model_name:<25} | Bottom30%: {worst_30_rate:.1%}")
 
 print(f"\nTotal models: {len(results_worst)}")
 
 
+# %% [markdown]
+# ## Stability Analysis Across Forecast Horizons
+# 
+# **Stability Metric**:
+# - **Average Standard Deviation**: Mean of standard deviations across different forecast horizons for each dataset
+# 
+# 
+
+# %%
+stability_analysis = {}
+
+base_datasets = {}
+for dataset in df_ratios_baseline.index:
+   base_name = dataset.rsplit('/', 1)[0] 
+   if base_name not in base_datasets:
+       base_datasets[base_name] = []
+   base_datasets[base_name].append(dataset)
+
+complete_datasets = {k: v for k, v in base_datasets.items() if len(v) == 3}
+
+for model in model_columns_baseline:
+   model_stability = []
+   
+   for base_name, horizons in complete_datasets.items():
+       mase_values = []
+       for horizon_dataset in horizons:
+           mase_values.append(df_ratios_baseline.loc[horizon_dataset, model])
+       
+       mean_mase = np.mean(mase_values)
+       std_mase = np.std(mase_values)
+       
+       model_stability.append({
+           'base_dataset': base_name,
+           'mean_mase': mean_mase,
+           'std_mase': std_mase
+       })
+   
+   stability_analysis[model] = model_stability
+
+
+model_stability_scores = {}
+for model in model_columns_baseline:
+   avg_std = np.mean([x['std_mase'] for x in stability_analysis[model]])
+   model_stability_scores[model] = avg_std
+
+stability_data = []
+for i, (model, avg_std) in enumerate(sorted(model_stability_scores.items(), key=lambda x: x[1]), 1):
+   stability_data.append({
+       'Rank': i,
+       'Model': model,
+       'Avg_Std': round(avg_std, 3)
+   })
+
+df_stability = pd.DataFrame(stability_data)
+
+print("Model Stability Across Forecast Horizons:")
+print("=" * 50)
+print(df_stability.to_string(index=False))
 
 
 
