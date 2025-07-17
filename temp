@@ -104,43 +104,45 @@ print(ratio)
 
 # %%
 best_baseline = np.where(ratio_b < 1, 
-                        models['naive']["eval_metrics/MASE[0.5]"], 
-                        models['seasonal_naive']["eval_metrics/MASE[0.5]"])
+                       models['naive']["eval_metrics/MASE[0.5]"], 
+                       models['seasonal_naive']["eval_metrics/MASE[0.5]"])
 
 all_ratios_baseline = {}
 for model in models.keys():
-    ratios_b = models[model]["eval_metrics/MASE[0.5]"] / best_baseline
-    all_ratios_baseline[model] = ratios_b-1
+   ratios_b = models[model]["eval_metrics/MASE[0.5]"] / best_baseline
+   all_ratios_baseline[model] = ratios_b-1
 
 df_ratios_baseline = pd.DataFrame(all_ratios_baseline)
 df_ratios_baseline['domain'] = domain_series.values
 df_ratios_baseline['num_variates'] = num_variates_series.values
 df_ratios_baseline.index = models['naive']['dataset']  
-df_ratios_baseline['frequency'] = df_ratios_baseline.index.str.split('/').str[1]  
+df_ratios_baseline['frequency'] = df_ratios_baseline.index.str.split('/').str[1]
+df_ratios_baseline['term'] = df_ratios_baseline.index.str.split('/').str[2]
 
-model_columns_baseline = [col for col in df_ratios_baseline.columns if col not in ['domain', 'num_variates', 'frequency']]
+model_columns_baseline = [col for col in df_ratios_baseline.columns if col not in ['domain', 'num_variates', 'frequency', 'term']]
 df_ranks_baseline = df_ratios_baseline[model_columns_baseline].rank(axis=1, method='min')
 
 # %%
 all_ratios_PatchTST = {}
 for model in models.keys():
-   ratios_PatchTST = models[model]["eval_metrics/MASE[0.5]"] / models["PatchTST"]["eval_metrics/MASE[0.5]"]
-   all_ratios_PatchTST[model] = ratios_PatchTST - 1  
+    ratios_PatchTST = models[model]["eval_metrics/MASE[0.5]"] / models["PatchTST"]["eval_metrics/MASE[0.5]"]
+    all_ratios_PatchTST[model] = ratios_PatchTST - 1  
 
 df_ratios_PatchTST = pd.DataFrame(all_ratios_PatchTST)
 df_ratios_PatchTST['domain'] = domain_series.values
 df_ratios_PatchTST['num_variates'] = num_variates_series.values
 df_ratios_PatchTST.index = models['naive']['dataset']
 df_ratios_PatchTST['frequency'] = df_ratios_PatchTST.index.str.split('/').str[1]
+df_ratios_PatchTST['term'] = df_ratios_PatchTST.index.str.split('/').str[2]
 
-model_columns_PatchTST = [col for col in df_ratios_PatchTST.columns if col not in ['domain', 'num_variates', 'frequency']]
+model_columns_PatchTST = [col for col in df_ratios_PatchTST.columns if col not in ['domain', 'num_variates', 'frequency', 'term']]
 df_ranks_PatchTST = df_ratios_PatchTST[model_columns_PatchTST].rank(axis=1, method='min')
 
 # %% [markdown]
 # # Dataset Analysis
 
 # %%
-heatmap_data_baseline = df_ratios_baseline.drop(columns=['naive', 'seasonal_naive', 'domain', 'num_variates', 'frequency','crossformer'])
+heatmap_data_baseline = df_ratios_baseline.drop(columns=['naive', 'seasonal_naive', 'domain', 'num_variates', 'frequency', 'term', 'crossformer'])
 
 
 model_order_b = heatmap_data_baseline.mean().sort_values(ascending=False).index
@@ -165,7 +167,7 @@ plt.xticks(rotation=45, ha='right')
 plt.show()
 
 # %%
-heatmap_data_PatchTST = df_ratios_PatchTST.drop(columns=['naive', 'seasonal_naive', 'domain', 'num_variates','frequency','crossformer','auto_theta', 'auto_ets','auto_arima', 'deepar', 'feedforward', 'tft', 'N-BEATS', 'DLinear', 'tide'])
+heatmap_data_PatchTST = df_ratios_PatchTST.drop(columns=['naive', 'seasonal_naive', 'domain', 'num_variates','frequency','crossformer', 'term', 'auto_theta', 'auto_ets','auto_arima', 'deepar', 'feedforward', 'tft', 'N-BEATS', 'DLinear', 'tide'])
 
 model_order_PatchTST = heatmap_data_PatchTST.mean().sort_values(ascending=False).index
 
@@ -218,49 +220,6 @@ print("=" * 70)
 print(df_difficulty.to_string(index=False))
 print(f"\nTotal datasets: {len(sorted_difficulty)}")
 
-# %%
-def freq_analysis(freq):
-    datasets_freq = []
-    for dataset in heatmap_sorted_baseline.index:
-        if '/' in dataset:
-            fre = dataset.split('/')[1]
-            if fre == freq:
-                datasets_freq.append(dataset)
-
-    print(f"Datasets with {freq} frequency: {datasets_freq}")
-    print(f"Total {freq} datasets: {len(datasets_freq)}")
-
-
-    model_performance_freq = {}
-
-    model_columns = [col for col in heatmap_sorted_baseline.columns if col not in ['domain', 'num_variates']]
-
-    for model in model_columns:
-        scores_freq = []
-        for dataset in datasets_freq:
-            score = heatmap_sorted_baseline.loc[dataset, model]
-            scores_freq.append(score)
-        
-        model_performance_freq[model] = np.mean(scores_freq)
-
-
-    sorted_models = sorted(model_performance_freq.items(), key=lambda x: x[1])
-
-    print("=" * 60)
-    for i, (model, mean_score) in enumerate(sorted_models, 1):
-        print(f"{i:2d}. {model:<20} | Mean: {mean_score:.3f}")
-
-    print(f"\nTotal models: {len(sorted_models)}")
-
-
-    best_model = sorted_models[0]
-    worst_model = sorted_models[-1]
-
-
-
-# %%
-freq_analysis('D')
-
 # %% [markdown]
 # # Temporal Evolution Analysis
 # 
@@ -305,87 +264,99 @@ df_evolution = pd.DataFrame(year_ratios)
 
 
 # %%
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
-import numpy as np
+# import matplotlib.pyplot as plt
+# import seaborn as sns
+# import pandas as pd
+# import numpy as np
 
-def plot_domain_evolution_iqr(df_ratios, models_by_years):
+# def plot_domain_evolution_iqr(df_ratios, models_by_years):
 
-    model_to_year = {}
-    for year, models in models_by_years.items():
-        for model in models:
-            model_to_year[model] = year
+#     model_to_year = {}
+#     for year, models in models_by_years.items():
+#         for model in models:
+#             model_to_year[model] = year
     
-    model_cols = [col for col in df_ratios.columns if col not in ['domain', 'num_variates']]
-    melted = df_ratios.reset_index().melt(
-        id_vars=['domain'],
-        value_vars=model_cols,
-        var_name='model',
-        value_name='ratio'
-    )
-    melted['year'] = melted['model'].map(model_to_year)
+#     model_cols = [col for col in df_ratios.columns if col not in ['domain', 'num_variates']]
+#     melted = df_ratios.reset_index().melt(
+#         id_vars=['domain'],
+#         value_vars=model_cols,
+#         var_name='model',
+#         value_name='ratio'
+#     )
+#     melted['year'] = melted['model'].map(model_to_year)
     
-    stats = melted.groupby(['domain', 'year'])['ratio'].agg(
-        ['median', lambda x: x.quantile(0.25), lambda x: x.quantile(0.75)]
-    )
-    stats.columns = ['median', 'q25', 'q75']
-    stats = stats.reset_index()
+#     stats = melted.groupby(['domain', 'year'])['ratio'].agg(
+#         ['median', lambda x: x.quantile(0.25), lambda x: x.quantile(0.75)]
+#     )
+#     stats.columns = ['median', 'q25', 'q75']
+#     stats = stats.reset_index()
     
-    domain_order = melted.groupby('domain')['ratio'].median().sort_values().index
+#     domain_order = melted.groupby('domain')['ratio'].median().sort_values().index
     
-    for domain in domain_order:
-        plt.figure(figsize=(10, 5))
-        domain_data = stats[stats['domain'] == domain]
+#     for domain in domain_order:
+#         plt.figure(figsize=(10, 5))
+#         domain_data = stats[stats['domain'] == domain]
         
-        plt.plot(domain_data['year'], domain_data['median'],
-                'o-', color='#1f77b4', linewidth=2,
-                markersize=8, label=f'{domain} (median)')
+#         plt.plot(domain_data['year'], domain_data['median'],
+#                 'o-', color='#1f77b4', linewidth=2,
+#                 markersize=8, label=f'{domain} (median)')
         
-        plt.fill_between(domain_data['year'],
-                        domain_data['q25'],
-                        domain_data['q75'],
-                        color='#1f77b4', alpha=0.2,
-                        label='IQR (25-75%)')
+#         plt.fill_between(domain_data['year'],
+#                         domain_data['q25'],
+#                         domain_data['q75'],
+#                         color='#1f77b4', alpha=0.2,
+#                         label='IQR (25-75%)')
         
-        plt.axhline(1.0, color='red', linestyle='--', alpha=0.7, label='Baseline (1.0)')
-        plt.title(f'Performance Evolution: {domain}\nMedian with Interquartile Range', pad=15)
-        plt.xlabel('Model Publication Year')
-        plt.ylabel('Performance Ratio')
-        plt.xticks(list(models_by_years.keys()))
-        plt.grid(True, alpha=0.2)
+#         plt.axhline(1.0, color='red', linestyle='--', alpha=0.7, label='Baseline (1.0)')
+#         plt.title(f'Performance Evolution: {domain}\nMedian with Interquartile Range', pad=15)
+#         plt.xlabel('Model Publication Year')
+#         plt.ylabel('Performance Ratio')
+#         plt.xticks(list(models_by_years.keys()))
+#         plt.grid(True, alpha=0.2)
         
-        # # Set consistent y-axis limits across all plots
-        # plt.ylim(max(0, melted['ratio'].min()-0.1),
-        #         melted['ratio'].max()+0.1)
+#         # # Set consistent y-axis limits across all plots
+#         # plt.ylim(max(0, melted['ratio'].min()-0.1),
+#         #         melted['ratio'].max()+0.1)
         
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+#         plt.legend()
+#         plt.tight_layout()
+#         plt.show()
 
-plot_domain_evolution_iqr(df_ratios_baseline, models_by_years)
+# plot_domain_evolution_iqr(df_ratios_baseline, models_by_years)
 
 # %%
 n_datasets = len(df_evolution.index)
 n_cols = 5
-n_rows = 20
-
+n_rows = (n_datasets + n_cols - 1) // n_cols
 fig, axes = plt.subplots(n_rows, n_cols, figsize=(20, 4*n_rows))
 axes = axes.flatten()
 
+
+all_values = df_evolution.values.flatten()
+global_min = -10
+global_max = 10
+
+max_abs = max(abs(global_min), abs(global_max))
+y_lim = [-max_abs * 1.1, max_abs * 1.1]  
+
 for i, dataset in enumerate(df_evolution.index):
-    axes[i].plot(df_evolution.columns, df_evolution.loc[dataset], 
-                 'o-', linewidth=2, markersize=4)
-    axes[i].axhline(y=1.0, color='red', linestyle='--', alpha=0.7)
+    values = df_evolution.loc[dataset]  
+    years = df_evolution.columns  
+    
+    axes[i].plot(years, values, 'o-', linewidth=2, markersize=4)
+    axes[i].axhline(y=0.0, color='red', linestyle='--', alpha=0.7)  
     axes[i].set_title(dataset, fontsize=10)
     axes[i].grid(True, alpha=0.3)
     axes[i].set_ylabel('Ratio')
+    axes[i].set_xlabel('Year')
+    
+
+    axes[i].set_ylim(y_lim)
 
 for i in range(n_datasets, len(axes)):
     axes[i].remove()
 
 plt.tight_layout()
-plt.show()
 
 # %% [markdown]
 # # Domain and Frequency Analysis
@@ -504,6 +475,28 @@ plt.xticks(rotation=45, ha='right')
 plt.tight_layout()
 plt.show()
 
+# %%
+period_performance_baseline = {}
+for period in df_ratios_baseline['term'].unique():
+    period_data_baseline = df_ratios_baseline[df_ratios_baseline['term'] == period]
+    period_performance_baseline[period] = period_data_baseline[model_columns_baseline].mean()
+
+df_period_baseline = pd.DataFrame(period_performance_baseline).T
+
+model_order_period_baseline = df_period_baseline.mean().sort_values(ascending=False).index
+period_order_baseline = df_period_baseline.mean(axis=1).sort_values(ascending=False).index
+
+df_period_baseline = df_period_baseline.loc[period_order_baseline, model_order_period_baseline]
+
+plt.figure(figsize=(25, 8))
+sns.heatmap(df_period_baseline, annot=True, fmt='.2f', cmap='seismic', center=0, vmin=-1, vmax=1)
+plt.title('Performance by Period - baseline')
+plt.xlabel('Models')
+plt.ylabel('Periods')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.show()
+
 # %% [markdown]
 # # Model Type Analysis
 # 
@@ -589,6 +582,70 @@ print(df_performance.to_string(index=False))
 print(f"\nSummary:")
 print(f"Total models: {len(scores_arith)}")
 print(f"Total datasets: {len(df_ratios_baseline)}")
+
+
+# %%
+scores_arith = {}
+mean_ranks = {}
+std_ranks = {}
+q25_ranks = {}
+median_ranks = {}
+q75_ranks = {}
+max_ranks = {}
+iqr_ranks = {}
+worse_than_PatchTST = {}
+
+for model in model_columns_PatchTST:
+   ratios = df_ratios_PatchTST[model]
+   ranks = df_ranks_PatchTST[model]
+   
+   scores_arith[model] = ratios.mean()
+   mean_ranks[model] = ranks.mean()
+   std_ranks[model] = ranks.std()
+   q25_ranks[model] = ranks.quantile(0.25)
+   median_ranks[model] = ranks.median()
+   q75_ranks[model] = ranks.quantile(0.75)
+   max_ranks[model] = ranks.max()
+   iqr_ranks[model] = q75_ranks[model] - q25_ranks[model]
+   worse_than_PatchTST[model] = (ratios > 0).sum()
+
+performance_data = []
+for i, (model, score) in enumerate(sorted(scores_arith.items(), key=lambda x: x[1]), 1):
+   arith_score = scores_arith[model]+1
+   failure_rate = worse_than_PatchTST[model] / len(df_ratios_PatchTST)
+   mean_rank = mean_ranks[model]
+   std_rank = std_ranks[model]
+   q25_rank = q25_ranks[model]
+   median_rank = median_ranks[model]
+   q75_rank = q75_ranks[model]
+   max_rank = max_ranks[model]
+   iqr_rank = iqr_ranks[model]
+   worse_count = worse_than_PatchTST[model]
+   
+   performance_data.append({
+       'Rank': i,
+       'Model': model,
+       'Arith_Score': round(arith_score, 3),
+       'Mean_Rank': round(mean_rank, 1),
+       'Std_Rank': round(std_rank, 1),
+       'Q25': round(q25_rank, 1),
+       'Median': round(median_rank, 1),
+       'Q75': round(q75_rank, 1),
+       'Max': int(max_rank),
+       'IQR': round(iqr_rank, 1),
+       'Worse_Count': int(worse_count),
+       'Failure_Rate': f"{failure_rate:.1%}"
+   })
+
+df_performance = pd.DataFrame(performance_data)
+
+print("Comprehensive Model Evaluation:")
+print("=" * 120)
+print(df_performance.to_string(index=False))
+
+print(f"\nSummary:")
+print(f"Total models: {len(scores_arith)}")
+print(f"Total datasets: {len(df_ratios_PatchTST)}")
 
 
 # %% [markdown]
@@ -734,6 +791,7 @@ df_stability = pd.DataFrame(stability_data)
 print("Model Stability Across Forecast Horizons:")
 print("=" * 50)
 print(df_stability.to_string(index=False))
+
 
 
 
