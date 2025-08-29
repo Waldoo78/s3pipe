@@ -88,103 +88,316 @@ for model in os.listdir(gift_results_folder):
                 models[model] = df.sort_values('dataset').reset_index(drop=True)
 
 # %%
-domain_series = pd.Series(models['naive']['domain'])
-num_variates_series = pd.Series(models['naive']['num_variates'])
-ratio_b = models['naive']["eval_metrics/MASE[0.5]"] / models['seasonal_naive']["eval_metrics/MASE[0.5]"]
-
-# %%
-bitbrains_results = models['seasonal_naive'][models['seasonal_naive']['dataset'] =='bitbrains_fast_storage/H/short']
-df_MLP = pd.read_csv("/home/wbouainouche/Samformer_distillation/GIFT-Eval/results/iTransformer/all_results.csv")
-ratio = df_MLP['eval_metrics/MASE[0.5]'].iloc[0] / bitbrains_results['eval_metrics/MASE[0.5]'].iloc[0]
-print(ratio)
-
+domain_series = pd.Series(models['Seasonal_naive']['domain'])
+num_variates_series = pd.Series(models['Seasonal_naive']['num_variates'])
 
 # %% [markdown]
 # # Ratio with naive baseline 
 
 # %%
-best_baseline = np.where(ratio_b < 1, 
-                       models['naive']["eval_metrics/MASE[0.5]"], 
-                       models['seasonal_naive']["eval_metrics/MASE[0.5]"])
-
-all_ratios_baseline = {}
+# MASE ratios vs Seasonal_naive
+all_ratios_MASE_baseline = {}
 for model in models.keys():
-   ratios_b = models[model]["eval_metrics/MASE[0.5]"] / best_baseline
-   all_ratios_baseline[model] = ratios_b-1
+ ratios_b = models[model]["eval_metrics/MASE[0.5]"] / models['Seasonal_naive']["eval_metrics/MASE[0.5]"]
+ all_ratios_MASE_baseline[model] = ratios_b-1
 
-df_ratios_baseline = pd.DataFrame(all_ratios_baseline)
-df_ratios_baseline['domain'] = domain_series.values
-df_ratios_baseline['num_variates'] = num_variates_series.values
-df_ratios_baseline.index = models['naive']['dataset']  
-df_ratios_baseline['frequency'] = df_ratios_baseline.index.str.split('/').str[1]
-df_ratios_baseline['term'] = df_ratios_baseline.index.str.split('/').str[2]
+df_ratios_MASE_baseline = pd.DataFrame(all_ratios_MASE_baseline)
+df_ratios_MASE_baseline['domain'] = domain_series.values
+df_ratios_MASE_baseline['num_variates'] = num_variates_series.values
+df_ratios_MASE_baseline.index = models['Seasonal_naive']['dataset']  
+df_ratios_MASE_baseline['frequency'] = df_ratios_MASE_baseline.index.str.split('/').str[1]
+df_ratios_MASE_baseline['term'] = df_ratios_MASE_baseline.index.str.split('/').str[2]
 
-model_columns_baseline = [col for col in df_ratios_baseline.columns if col not in ['domain', 'num_variates', 'frequency', 'term']]
-df_ranks_baseline = df_ratios_baseline[model_columns_baseline].rank(axis=1, method='min')
+model_columns_MASE_baseline = [col for col in df_ratios_MASE_baseline.columns if col not in ['domain', 'num_variates', 'frequency', 'term']]
+df_ranks_MASE_baseline = df_ratios_MASE_baseline[model_columns_MASE_baseline].rank(axis=1, method='min')
+
+# CRPS ratios vs Seasonal_naive
+all_ratios_CRPS_baseline = {}
+for model in models.keys():
+ ratios_b = models[model]["eval_metrics/mean_weighted_sum_quantile_loss"] / models['Seasonal_naive']["eval_metrics/mean_weighted_sum_quantile_loss"]
+ all_ratios_CRPS_baseline[model] = ratios_b-1
+
+df_ratios_CRPS_baseline = pd.DataFrame(all_ratios_CRPS_baseline)
+df_ratios_CRPS_baseline['domain'] = domain_series.values
+df_ratios_CRPS_baseline['num_variates'] = num_variates_series.values
+df_ratios_CRPS_baseline.index = models['Seasonal_naive']['dataset']  
+df_ratios_CRPS_baseline['frequency'] = df_ratios_CRPS_baseline.index.str.split('/').str[1]
+df_ratios_CRPS_baseline['term'] = df_ratios_CRPS_baseline.index.str.split('/').str[2]
+
+model_columns_CRPS_baseline = [col for col in df_ratios_CRPS_baseline.columns if col not in ['domain', 'num_variates', 'frequency', 'term']]
+df_ranks_CRPS_baseline = df_ratios_CRPS_baseline[model_columns_CRPS_baseline].rank(axis=1, method='min')
+
+# %% [markdown]
+# # Ratio with Linear++ baseline
 
 # %%
-all_ratios_PatchTST = {}
+# MASE ratios vs Linear++
+all_ratios_MASE_linear = {}
 for model in models.keys():
-    ratios_PatchTST = models[model]["eval_metrics/MASE[0.5]"] / models["PatchTST"]["eval_metrics/MASE[0.5]"]
-    all_ratios_PatchTST[model] = ratios_PatchTST - 1  
+   ratios_MASE_l = models[model]["eval_metrics/MASE[0.5]"] / models["Linear++"]["eval_metrics/MASE[0.5]"]
+   all_ratios_MASE_linear[model] = ratios_MASE_l - 1  
 
-df_ratios_PatchTST = pd.DataFrame(all_ratios_PatchTST)
-df_ratios_PatchTST['domain'] = domain_series.values
-df_ratios_PatchTST['num_variates'] = num_variates_series.values
-df_ratios_PatchTST.index = models['naive']['dataset']
-df_ratios_PatchTST['frequency'] = df_ratios_PatchTST.index.str.split('/').str[1]
-df_ratios_PatchTST['term'] = df_ratios_PatchTST.index.str.split('/').str[2]
+df_ratios_MASE_linear = pd.DataFrame(all_ratios_MASE_linear)
+df_ratios_MASE_linear['domain'] = domain_series.values
+df_ratios_MASE_linear['num_variates'] = num_variates_series.values
+df_ratios_MASE_linear.index = models['Seasonal_naive']['dataset']
+df_ratios_MASE_linear['frequency'] = df_ratios_MASE_linear.index.str.split('/').str[1]
+df_ratios_MASE_linear['term'] = df_ratios_MASE_linear.index.str.split('/').str[2]
 
-model_columns_PatchTST = [col for col in df_ratios_PatchTST.columns if col not in ['domain', 'num_variates', 'frequency', 'term']]
-df_ranks_PatchTST = df_ratios_PatchTST[model_columns_PatchTST].rank(axis=1, method='min')
+model_columns_MASE_linear = [col for col in df_ratios_MASE_linear.columns if col not in ['domain', 'num_variates', 'frequency', 'term']]
+df_ranks_MASE_linear = df_ratios_MASE_linear[model_columns_MASE_linear].rank(axis=1, method='min')
+
+# CRPS ratios vs Linear++
+all_ratios_CRPS_linear = {}
+for model in models.keys():
+   ratios_CRPS_l = models[model]["eval_metrics/mean_weighted_sum_quantile_loss"] / models["Linear++"]["eval_metrics/mean_weighted_sum_quantile_loss"]
+   all_ratios_CRPS_linear[model] = ratios_CRPS_l - 1  
+
+df_ratios_CRPS_linear = pd.DataFrame(all_ratios_CRPS_linear)
+df_ratios_CRPS_linear['domain'] = domain_series.values
+df_ratios_CRPS_linear['num_variates'] = num_variates_series.values
+df_ratios_CRPS_linear.index = models['Seasonal_naive']['dataset']
+df_ratios_CRPS_linear['frequency'] = df_ratios_CRPS_linear.index.str.split('/').str[1]
+df_ratios_CRPS_linear['term'] = df_ratios_CRPS_linear.index.str.split('/').str[2]
+
+model_columns_CRPS_linear = [col for col in df_ratios_CRPS_linear.columns if col not in ['domain', 'num_variates', 'frequency', 'term']]
+df_ranks_CRPS_linear = df_ratios_CRPS_linear[model_columns_CRPS_linear].rank(axis=1, method='min')
+
+# %%
+# Performance analysis for MASE vs Seasonal_naive
+scores_geom_baseline_mase = {}
+mean_ranks_baseline_mase = {}
+median_ranks_baseline_mase = {}
+worse_than_baseline_mase = {}
+
+for model in model_columns_MASE_baseline:
+    ratios_baseline_mase = df_ratios_MASE_baseline[model]
+    ranks_baseline_mase = df_ranks_MASE_baseline[model]
+    
+    valid_ratios_mase = ratios_baseline_mase + 1 
+    scores_geom_baseline_mase[model] = np.exp(np.mean(np.log(valid_ratios_mase))) - 1
+    mean_ranks_baseline_mase[model] = ranks_baseline_mase.mean()
+    median_ranks_baseline_mase[model] = ranks_baseline_mase.median()
+    worse_than_baseline_mase[model] = (ratios_baseline_mase > 0).sum()
+
+performance_data_baseline_mase = []
+for i, (model, score) in enumerate(sorted(scores_geom_baseline_mase.items(), key=lambda x: x[1]), 1):
+    performance_data_baseline_mase.append({
+        'Rank': i,
+        'Model': model,
+        'Geom_Score_Seasonal_Naive_Baseline': round(scores_geom_baseline_mase[model] + 1, 3),
+        'Mean_Rank_Seasonal_Naive_Baseline': round(mean_ranks_baseline_mase[model], 1),
+        'Median_Rank_Seasonal_Naive_Baseline': round(median_ranks_baseline_mase[model], 1),
+        'Worse_Count_Seasonal_Naive_Baseline': int(worse_than_baseline_mase[model]),
+        'Fail_Rate_Seasonal_Naive_Baseline': f"{worse_than_baseline_mase[model] / len(df_ratios_MASE_baseline):.1%}"
+    })
+
+df_performance_baseline_mase = pd.DataFrame(performance_data_baseline_mase)
+print("MASE Performance vs Seasonal Naive Baseline:")
+print(df_performance_baseline_mase.to_string(index=False))
+
+
+# %%
+# Performance analysis for CRPS vs Seasonal_naive
+scores_geom_baseline_crps = {}
+mean_ranks_baseline_crps = {}
+median_ranks_baseline_crps = {}
+worse_than_baseline_crps = {}
+
+for model in model_columns_CRPS_baseline:
+    ratios_baseline_crps = df_ratios_CRPS_baseline[model]
+    ranks_baseline_crps = df_ranks_CRPS_baseline[model]
+
+    valid_ratios_crps = ratios_baseline_crps + 1 
+    scores_geom_baseline_crps[model] = np.exp(np.mean(np.log(valid_ratios_crps))) - 1
+
+    mean_ranks_baseline_crps[model] = ranks_baseline_crps.mean()
+    median_ranks_baseline_crps[model] = ranks_baseline_crps.median()
+    
+    worse_than_baseline_crps[model] = (ratios_baseline_crps > 0).sum()
+
+performance_data_baseline_crps = []
+for i, (model, score) in enumerate(sorted(scores_geom_baseline_crps.items(), key=lambda x: x[1]), 1):
+    performance_data_baseline_crps.append({
+        'Rank': i,
+        'Model': model,
+        'Geom_Score_Seasonal_Naive_Baseline': round(scores_geom_baseline_crps[model] + 1, 3),  
+        'Mean_Rank_Seasonal_Naive_Baseline': round(mean_ranks_baseline_crps[model], 1),
+        'Median_Rank_Seasonal_Naive_Baseline': round(median_ranks_baseline_crps[model], 1),
+        'Worse_Count_Seasonal_Naive_Baseline': int(worse_than_baseline_crps[model]),
+        'Fail_Rate_Seasonal_Naive_Baseline': f"{worse_than_baseline_crps[model] / len(df_ratios_CRPS_baseline):.1%}"
+    })
+
+df_performance_baseline_crps = pd.DataFrame(performance_data_baseline_crps)
+print("CRPS Performance vs Seasonal Naive Baseline:")
+print(df_performance_baseline_crps.to_string(index=False))
+
+# %%
+# Performance analysis for MASE vs Linear++
+scores_geom_linear_mase = {}
+mean_ranks_linear_mase = {}
+median_ranks_linear_mase = {}
+worse_than_linear_mase = {}
+
+for model in model_columns_MASE_linear:
+    ratios_linear_mase = df_ratios_MASE_linear[model]
+    ranks_linear_mase = df_ranks_MASE_linear[model]
+    
+    valid_ratios_mase = ratios_linear_mase + 1 
+    scores_geom_linear_mase[model] = np.exp(np.mean(np.log(valid_ratios_mase))) - 1
+    mean_ranks_linear_mase[model] = ranks_linear_mase.mean()
+    median_ranks_linear_mase[model] = ranks_linear_mase.median()
+    worse_than_linear_mase[model] = (ratios_linear_mase > 0).sum()
+
+performance_data_linear_mase = []
+for i, (model, score) in enumerate(sorted(scores_geom_linear_mase.items(), key=lambda x: x[1]), 1):
+    performance_data_linear_mase.append({
+        'Rank': i,
+        'Model': model,
+        'Geom_Score_Linear_Baseline': round(scores_geom_linear_mase[model] + 1, 3),
+        'Mean_Rank_Linear_Baseline': round(mean_ranks_linear_mase[model], 1),
+        'Median_Rank_Linear_Baseline': round(median_ranks_linear_mase[model], 1),
+        'Worse_Count_Linear_Baseline': int(worse_than_linear_mase[model]),
+        'Fail_Rate_Linear_Baseline': f"{worse_than_linear_mase[model] / len(df_ratios_MASE_linear):.1%}"
+    })
+
+df_performance_linear_mase = pd.DataFrame(performance_data_linear_mase)
+print("MASE Performance vs Linear++ Baseline:")
+print(df_performance_linear_mase.to_string(index=False))
+
+# %%
+# Performance analysis for CRPS vs Linear++
+scores_geom_linear_crps = {}
+mean_ranks_linear_crps = {}
+median_ranks_linear_crps = {}
+worse_than_linear_crps = {}
+
+for model in model_columns_CRPS_linear:
+    ratios_linear_crps = df_ratios_CRPS_linear[model]
+    ranks_linear_crps = df_ranks_CRPS_linear[model]
+
+    valid_ratios_crps = ratios_linear_crps + 1 
+    scores_geom_linear_crps[model] = np.exp(np.mean(np.log(valid_ratios_crps))) - 1
+
+    mean_ranks_linear_crps[model] = ranks_linear_crps.mean()
+    median_ranks_linear_crps[model] = ranks_linear_crps.median()
+    
+    worse_than_linear_crps[model] = (ratios_linear_crps > 0).sum()
+
+performance_data_linear_crps = []
+for i, (model, score) in enumerate(sorted(scores_geom_linear_crps.items(), key=lambda x: x[1]), 1):
+    performance_data_linear_crps.append({
+        'Rank': i,
+        'Model': model,
+        'Geom_Score_Linear_Baseline': round(scores_geom_linear_crps[model] + 1, 3),  
+        'Mean_Rank_Linear_Baseline': round(mean_ranks_linear_crps[model], 1),
+        'Median_Rank_Linear_Baseline': round(median_ranks_linear_crps[model], 1),
+        'Worse_Count_Linear_Baseline': int(worse_than_linear_crps[model]),
+        'Fail_Rate_Linear_Baseline': f"{worse_than_linear_crps[model] / len(df_ratios_CRPS_linear):.1%}"
+    })
+
+df_performance_linear_crps = pd.DataFrame(performance_data_linear_crps)
+print("CRPS Performance vs Linear++ Baseline:")
+print(df_performance_linear_crps.to_string(index=False))
 
 # %% [markdown]
 # # Dataset Analysis
 
 # %%
-heatmap_data_baseline = df_ratios_baseline.drop(columns=['naive', 'seasonal_naive', 'domain', 'num_variates', 'frequency', 'term', 'crossformer'])
+# Heatmap MASE vs Seasonal_naive baseline
+heatmap_data_MASE_baseline = df_ratios_MASE_baseline.drop(columns=[ 'domain', 'num_variates', 'frequency', 'term', ])
 
+model_order_MASE_b = list(dict(sorted(scores_geom_baseline_mase.items(), key=lambda item: item[1])).keys())[::-1]
+dataset_order_MASE_b = (np.exp(np.log(heatmap_data_MASE_baseline + 1).mean(axis=1)) - 1).sort_values(ascending=False).index
 
-model_order_b = heatmap_data_baseline.mean().sort_values(ascending=False).index
-
- 
-dataset_order_b = heatmap_data_baseline.mean(axis=1).sort_values(ascending=False).index
-
-
-heatmap_sorted_baseline = heatmap_data_baseline.loc[dataset_order_b, model_order_b]
-
+heatmap_sorted_MASE_baseline = heatmap_data_MASE_baseline.loc[dataset_order_MASE_b, model_order_MASE_b]
 
 plt.figure(figsize=(20, 25))
-sns.heatmap(heatmap_sorted_baseline, 
-            annot=False,
-            cmap='seismic',
-            center=0,
-            vmax=1,
-            vmin=-1)
-
-plt.title('Performance Heatmap-baseline')
-plt.xticks(rotation=45, ha='right')
-plt.show()
-
-# %%
-heatmap_data_PatchTST = df_ratios_PatchTST.drop(columns=['naive', 'seasonal_naive', 'domain', 'num_variates','frequency','crossformer', 'term', 'auto_theta', 'auto_ets','auto_arima', 'deepar', 'feedforward', 'tft', 'N-BEATS', 'DLinear', 'tide'])
-
-model_order_PatchTST = heatmap_data_PatchTST.mean().sort_values(ascending=False).index
-
-dataset_order_PatchTST = heatmap_data_PatchTST.mean(axis=1).sort_values(ascending=False).index
-
-heatmap_sorted_PatchTST = heatmap_data_PatchTST.loc[dataset_order_PatchTST, model_order_PatchTST]
-
-plt.figure(figsize=(20, 25))
-sns.heatmap(heatmap_sorted_PatchTST, 
+sns.heatmap(heatmap_sorted_MASE_baseline, 
            annot=False,
            cmap='seismic',
            center=0,
            vmax=1,
            vmin=-1)
 
-plt.title('Performance Heatmap-PatchTST')
+plt.title('MASE Ratios Heatmap (Reference: Seasonal Naive)', fontsize=16)
 plt.xticks(rotation=45, ha='right')
+
+plt.savefig("heatmap_MASE_baseline.pdf", format='pdf', bbox_inches='tight')
+plt.show()
+
+
+# %%
+# Heatmap CRPS vs Seasonal_naive baseline
+heatmap_data_CRPS_baseline = df_ratios_CRPS_baseline.drop(columns=[ 'domain', 'num_variates', 'frequency', 'term', ])
+
+model_order_CRPS_b = list(dict(sorted(scores_geom_baseline_crps.items(), key=lambda item: item[1])).keys())[::-1]
+dataset_order_CRPS_b = (np.exp(np.log(heatmap_data_CRPS_baseline + 1).mean(axis=1)) - 1).sort_values(ascending=False).index
+
+heatmap_sorted_CRPS_baseline = heatmap_data_CRPS_baseline.loc[dataset_order_CRPS_b, model_order_CRPS_b]
+
+plt.figure(figsize=(20, 25))
+sns.heatmap(heatmap_sorted_CRPS_baseline, 
+           annot=False,
+           cmap='seismic',
+           center=0,
+           vmax=1,
+           vmin=-1)
+
+plt.title('CRPS Ratios Heatmap (Reference: Seasonal Naive)')
+plt.xticks(rotation=45, ha='right')
+
+
+plt.savefig("heatmap_CRPS_baseline.pdf", format='pdf', bbox_inches='tight')
+plt.show()
+
+
+# %%
+# Heatmap MASE vs Linear++ baseline
+heatmap_data_MASE_linear = df_ratios_MASE_linear.drop(columns=[ 'domain', 'num_variates', 'frequency', 'term', ])
+
+model_order_MASE_linear = list(dict(sorted(scores_geom_linear_mase.items(), key=lambda item: item[1])).keys())[::-1]
+dataset_order_MASE_linear = (np.exp(np.log(heatmap_data_MASE_linear + 1).mean(axis=1)) - 1).sort_values(ascending=False).index
+
+heatmap_sorted_MASE_linear = heatmap_data_MASE_linear.loc[dataset_order_MASE_linear, model_order_MASE_linear]
+
+plt.figure(figsize=(20, 25))
+sns.heatmap(heatmap_sorted_MASE_linear, 
+           annot=False,
+           cmap='seismic',
+           center=0,
+           vmax=1,
+           vmin=-1)
+
+plt.title('MASE Ratios Heatmap (Reference: Linear++)', fontsize=16)
+plt.xticks(rotation=45, ha='right')
+
+
+plt.savefig("heatmap_MASE_linear.pdf", format='pdf', bbox_inches='tight')
+plt.show()
+
+
+# %%
+# Heatmap CRPS vs Linear++ baseline
+heatmap_data_CRPS_linear = df_ratios_CRPS_linear.drop(columns=[ 'domain', 'num_variates', 'frequency', 'term', ])
+
+model_order_CRPS_linear = list(dict(sorted(scores_geom_linear_crps.items(), key=lambda item: item[1])).keys())[::-1]
+dataset_order_CRPS_linear = (np.exp(np.log(heatmap_data_CRPS_linear + 1).mean(axis=1)) - 1).sort_values(ascending=False).index
+
+heatmap_sorted_CRPS_linear = heatmap_data_CRPS_linear.loc[dataset_order_CRPS_linear, model_order_CRPS_linear]
+
+plt.figure(figsize=(20, 25))
+sns.heatmap(heatmap_sorted_CRPS_linear, 
+           annot=False,
+           cmap='seismic',
+           center=0,
+           vmax=1,
+           vmin=-1)
+
+plt.title('CRPS Ratios Heatmap (Reference: Linear++)', fontsize=16)
+plt.xticks(rotation=45, ha='right')
+
+plt.savefig("heatmap_CRPS_linear.pdf", format='pdf', bbox_inches='tight')
 plt.show()
 
 # %% [markdown]
@@ -193,32 +406,117 @@ plt.show()
 # **Metric Definition**: Dataset difficulty is measured as the arithmetic mean of normalized MASE across all models.
 
 # %%
-dataset_difficulty_arith = {}
+# Dataset difficulty MASE vs Seasonal_naive
+dataset_difficulty_MASE_geom_b = {}
 
-for dataset in heatmap_sorted_baseline.index:
-    row = heatmap_sorted_baseline.loc[dataset]
-    dataset_difficulty_arith[dataset] = np.mean(row)
+for dataset in heatmap_sorted_MASE_baseline.index:
+   row = heatmap_sorted_MASE_baseline.loc[dataset]
+   dataset_difficulty_MASE_geom_b[dataset] = np.exp(np.mean(np.log(row + 1))) - 1
 
-sorted_difficulty = sorted(dataset_difficulty_arith.items(), key=lambda x: x[1], reverse=True)
+sorted_difficulty_MASE_b = sorted(dataset_difficulty_MASE_geom_b.items(), key=lambda x: x[1], reverse=True)
+
+data_MASE_b = []
+for i, (dataset, geom_score) in enumerate(sorted_difficulty_MASE_b, 1):
+   row = heatmap_sorted_MASE_baseline.loc[dataset]
+   geom_std = np.exp(np.std(np.log(row + 1))) - 1
+   data_MASE_b.append({
+       'Rank': i,
+       'Dataset': dataset,
+       'Geom_Mean': round(geom_score+1, 3),
+       'Geom_Std': round(geom_std, 3)
+   })
+
+df_difficulty_MASE_b = pd.DataFrame(data_MASE_b)
+
+print("Dataset Difficulty Ranking MASE: Seasonal naive baseline")
+print("=" * 70)
+print(df_difficulty_MASE_b.to_string(index=False))
+print(f"\nTotal datasets: {len(sorted_difficulty_MASE_b)}")
 
 
-data = []
-for i, (dataset, mean_score) in enumerate(sorted_difficulty, 1):
-    row = heatmap_sorted_baseline.loc[dataset]
-    std_score = np.std(row)
-    data.append({
+# %%
+# Dataset difficulty CRPS vs Seasonal_naive
+dataset_difficulty_CRPS_geom_b = {}
+
+for dataset in heatmap_sorted_CRPS_baseline.index:
+    row = heatmap_sorted_CRPS_baseline.loc[dataset]
+    dataset_difficulty_CRPS_geom_b[dataset] = np.exp(np.mean(np.log(row + 1))) - 1
+
+sorted_difficulty_CRPS_b = sorted(dataset_difficulty_CRPS_geom_b.items(), key=lambda x: x[1], reverse=True)
+
+data_CRPS_b = []
+for i, (dataset, geom_score) in enumerate(sorted_difficulty_CRPS_b, 1):
+    row = heatmap_sorted_CRPS_baseline.loc[dataset]
+    geom_std = np.exp(np.std(np.log(row + 1))) - 1
+    data_CRPS_b.append({
         'Rank': i,
         'Dataset': dataset,
-        'Mean': round(mean_score, 3),
-        'Std': round(std_score, 3)
+        'Geom_Mean': round(geom_score+1, 3),
+        'Geom_Std': round(geom_std, 3)
     })
 
-df_difficulty = pd.DataFrame(data)
+df_difficulty_CRPS_b = pd.DataFrame(data_CRPS_b)
 
-print("Dataset Difficulty Ranking:")
+print("Dataset Difficulty Ranking CRPS: Seasonal naive baseline")
 print("=" * 70)
-print(df_difficulty.to_string(index=False))
-print(f"\nTotal datasets: {len(sorted_difficulty)}")
+print(df_difficulty_CRPS_b.to_string(index=False))
+print(f"\nTotal datasets: {len(sorted_difficulty_CRPS_b)}")
+
+# %%
+# Dataset difficulty MASE vs Linear++
+dataset_difficulty_MASE_geom_l = {}
+
+for dataset in heatmap_sorted_MASE_linear.index:
+   row = heatmap_sorted_MASE_linear.loc[dataset]
+   dataset_difficulty_MASE_geom_l[dataset] = np.exp(np.mean(np.log(row + 1))) - 1
+
+sorted_difficulty_MASE_l = sorted(dataset_difficulty_MASE_geom_l.items(), key=lambda x: x[1], reverse=True)
+
+data_MASE_l = []
+for i, (dataset, geom_score) in enumerate(sorted_difficulty_MASE_l, 1):
+   row = heatmap_sorted_MASE_linear.loc[dataset]
+   geom_std = np.exp(np.std(np.log(row + 1))) - 1
+   data_MASE_l.append({
+       'Rank': i,
+       'Dataset': dataset,
+       'Geom_Mean': round(geom_score+1, 3),
+       'Geom_Std': round(geom_std, 3)
+   })
+
+df_difficulty_MASE_l = pd.DataFrame(data_MASE_l)
+
+print("Dataset Difficulty Ranking MASE: Linear++ baseline")
+print("=" * 70)
+print(df_difficulty_MASE_l.to_string(index=False))
+print(f"\nTotal datasets: {len(sorted_difficulty_MASE_l)}")
+
+# %%
+# Dataset difficulty CRPS vs Linear++
+dataset_difficulty_CRPS_geom_l = {}
+
+for dataset in heatmap_sorted_CRPS_linear.index:
+   row = heatmap_sorted_CRPS_linear.loc[dataset]
+   dataset_difficulty_CRPS_geom_l[dataset] = np.exp(np.mean(np.log(row + 1))) - 1
+
+sorted_difficulty_CRPS_l = sorted(dataset_difficulty_CRPS_geom_l.items(), key=lambda x: x[1], reverse=True)
+
+data_CRPS_l = []
+for i, (dataset, geom_score) in enumerate(sorted_difficulty_CRPS_l, 1):
+   row = heatmap_sorted_CRPS_linear.loc[dataset]
+   geom_std = np.exp(np.std(np.log(row + 1))) - 1
+   data_CRPS_l.append({
+       'Rank': i,
+       'Dataset': dataset,
+       'Geom_Mean': round(geom_score+1, 3),
+       'Geom_Std': round(geom_std, 3)
+   })
+
+df_difficulty_CRPS_l = pd.DataFrame(data_CRPS_l)
+
+print("Dataset Difficulty Ranking CRPS: Linear++ baseline")
+print("=" * 70)
+print(df_difficulty_CRPS_l.to_string(index=False))
+print(f"\nTotal datasets: {len(sorted_difficulty_CRPS_l)}")
 
 # %% [markdown]
 # # Temporal Evolution Analysis
@@ -238,560 +536,302 @@ print(f"\nTotal datasets: {len(sorted_difficulty)}")
 # 
 
 # %%
-models_by_years = {
-    2015: ['naive', 'seasonal_naive', 'auto_theta', 'auto_ets','auto_arima'],
-    2017: ['deepar'],
-    2019: ['tft'],
-    2020: ['N-BEATS'],
-    2022: ['PatchTST','DLinear'],
-    2023: ['tide'],
-    2024: [ 
-         'YingLong_6m', 'YingLong_50m', 'YingLong_110m', 'YingLong_300m',
-        'tabpfn_ts', 'TTM-R1-Zeroshot','TTM-R2-Zeroshot', 'TTM-R2-Finetuned','Chronos_small', 'chronos_base', 'chronos_large', 
-        'chronos_bolt_small', 'chronos_bolt_base','timesfm', 'timesfm_2_0_500m', 'Moirai_small', 'Moirai_base', 'Moirai_large',
-         'TTM-R2-Zeroshot', 'TTM-R2-Finetuned','Lag-Llama', 'Timer','tempo_ensemble'
-    ],
-    2025: ['TiRex','Toto_Open_Base_1.0', 'sundial_base_128m','visionts']
+import matplotlib.lines as mlines
+models_years_analysis = {
+  "<2019": ['Seasonal_naive'],
+  2019: ['TFT'],
+  2020: ['N-BEATS'],
+  2022: ['PatchTST', 'DLinear'],
+  2023: ['iTransformer', 'Lag-Llama'],
+  2024: ['Chronos_bolt_small', 'Chronos_base', 'Moirai_small'],
+  2025: ['TiRex', 'Linear++']
 }
 
-year_ratios = {}
-for year, year_models in models_by_years.items():
-    available_models = [m for m in year_models if m in df_ratios_baseline.columns]
-    if available_models:
-        year_ratios[year] = df_ratios_baseline[available_models].mean(axis=1)
+model_markers = {
+  'Seasonal_naive': ('D', '#ff7f0e'),
+  'DeepAR': ('D', '#1f77b4'),
+  'TFT': ('D', '#1f77b4'),
+  'N-BEATS': ('D', '#1f77b4'),
+  'PatchTST': ('D', '#1f77b4'),
+  'DLinear': ('D', '#1f77b4'),
+  'Linear++': ('D', '#1f77b4'),
+  'iTransformer': ('D', '#1f77b4'),
+  'TabPFN-TS': ('o', '#d62728'),
+  'Lag-Llama': ('o', '#d62728'),  
+  'Chronos_base': ('o', '#d62728'),
+  'Moirai_small': ('o', '#d62728'),
+  'Chronos_bolt_small': ('o', '#d62728'),
+  'TiRex': ('o', '#d62728'),
+  'Toto_Open_Base_1.0': ('o', '#d62728'),
+}
 
-df_evolution = pd.DataFrame(year_ratios)
+model_categories = {
+  'Seasonal_naive': 'Statistical',
+  'DeepAR': 'Deep Learning',
+  'TFT': 'Deep Learning',
+  'N-BEATS': 'Deep Learning',
+  'PatchTST': 'Deep Learning',
+  'DLinear': 'Deep Learning',
+  'Linear++': 'Deep Learning',
+  'iTransformer': 'Deep Learning',
+  'TabPFN-TS': 'Zero-shot',
+  'Chronos_bolt_small': 'Zero-shot',
+  'TiRex': 'Zero-shot',
+  'Chronos_base': 'Zero-shot',
+  'Moirai_small': 'Zero-shot',
+  'Lag-Llama': 'Zero-shot',
+  'Toto_Open_Base_1.0': 'Zero-shot',
+}
 
+positions = [1, 2, 3, 4, 5, 6, 7]
+labels = ["<2019", 2019, 2020, 2022, 2023, 2024, 2025]
+year_to_pos = {year: pos for year, pos in zip(labels, positions)}
 
-# %%
-# import matplotlib.pyplot as plt
-# import seaborn as sns
-# import pandas as pd
-# import numpy as np
+plt.figure(figsize=(12, 8))
 
-# def plot_domain_evolution_iqr(df_ratios, models_by_years):
+plt.axhline(y=1.0, color='red', linestyle='--', alpha=0.5,
+          label='Classical Baseline (MASE=1.0)')
+plt.axhline(y=0.870, color='green', linestyle='--', alpha=0.5,
+          label='Proposed baseline (MASE=0.87)')
 
-#     model_to_year = {}
-#     for year, models in models_by_years.items():
-#         for model in models:
-#             model_to_year[model] = year
-    
-#     model_cols = [col for col in df_ratios.columns if col not in ['domain', 'num_variates']]
-#     melted = df_ratios.reset_index().melt(
-#         id_vars=['domain'],
-#         value_vars=model_cols,
-#         var_name='model',
-#         value_name='ratio'
-#     )
-#     melted['year'] = melted['model'].map(model_to_year)
-    
-#     stats = melted.groupby(['domain', 'year'])['ratio'].agg(
-#         ['median', lambda x: x.quantile(0.25), lambda x: x.quantile(0.75)]
-#     )
-#     stats.columns = ['median', 'q25', 'q75']
-#     stats = stats.reset_index()
-    
-#     domain_order = melted.groupby('domain')['ratio'].median().sort_values().index
-    
-#     for domain in domain_order:
-#         plt.figure(figsize=(10, 5))
-#         domain_data = stats[stats['domain'] == domain]
-        
-#         plt.plot(domain_data['year'], domain_data['median'],
-#                 'o-', color='#1f77b4', linewidth=2,
-#                 markersize=8, label=f'{domain} (median)')
-        
-#         plt.fill_between(domain_data['year'],
-#                         domain_data['q25'],
-#                         domain_data['q75'],
-#                         color='#1f77b4', alpha=0.2,
-#                         label='IQR (25-75%)')
-        
-#         plt.axhline(1.0, color='red', linestyle='--', alpha=0.7, label='Baseline (1.0)')
-#         plt.title(f'Performance Evolution: {domain}\nMedian with Interquartile Range', pad=15)
-#         plt.xlabel('Model Publication Year')
-#         plt.ylabel('Performance Ratio')
-#         plt.xticks(list(models_by_years.keys()))
-#         plt.grid(True, alpha=0.2)
-        
-#         # # Set consistent y-axis limits across all plots
-#         # plt.ylim(max(0, melted['ratio'].min()-0.1),
-#         #         melted['ratio'].max()+0.1)
-        
-#         plt.legend()
-#         plt.tight_layout()
-#         plt.show()
+plotted_categories = set()
 
-# plot_domain_evolution_iqr(df_ratios_baseline, models_by_years)
+for year, models in models_years_analysis.items():
+  x = year_to_pos[year]
+  for model in models:
+      if model in scores_geom_baseline_mase:
+          marker, color = model_markers[model]
+          category = model_categories[model]
+          score = scores_geom_baseline_mase[model] + 1
 
-# %%
-n_datasets = len(df_evolution.index)
-n_cols = 5
-n_rows = (n_datasets + n_cols - 1) // n_cols
-fig, axes = plt.subplots(n_rows, n_cols, figsize=(20, 4*n_rows))
-axes = axes.flatten()
+          label = category if category not in plotted_categories else ""
+          if label:
+              plotted_categories.add(category)
 
+          if model == 'Linear++':
+              plt.scatter(x, score, marker='*', s=300, color='green',
+                          edgecolors='black', linewidth=1.5, alpha=0.9, label=label)
+              plt.annotate(model, (x, score), xytext=(0, 12), textcoords='offset points',
+                           ha='center', fontsize=12.5, fontweight='bold', alpha=0.9)
+          else:
+              plt.scatter(x, score, marker=marker, color=color, s=150,
+                          alpha=0.8, edgecolors='black', linewidth=1, label=label)
+              plt.annotate(model, (x, score), xytext=(0, 10),
+                           textcoords='offset points', ha='center',
+                           fontsize=12.5, alpha=0.8)
 
-all_values = df_evolution.values.flatten()
-global_min = -10
-global_max = 10
+plt.xlabel('Year', fontsize=14, fontweight='bold')
+plt.ylabel('Geometric Mean MASE Ratio vs Seasonal Naive', fontsize=14, fontweight='bold')
+plt.title('Evolution of Time Series Forecasting Models Performance (MASE)', 
+        fontsize=16, fontweight='bold', pad=20)
 
-max_abs = max(abs(global_min), abs(global_max))
-y_lim = [-max_abs * 1.1, max_abs * 1.1]  
+plt.grid(True, alpha=0.3)
 
-for i, dataset in enumerate(df_evolution.index):
-    values = df_evolution.loc[dataset]  
-    years = df_evolution.columns  
-    
-    axes[i].plot(years, values, 'o-', linewidth=2, markersize=4)
-    axes[i].axhline(y=0.0, color='red', linestyle='--', alpha=0.7)  
-    axes[i].set_title(dataset, fontsize=10)
-    axes[i].grid(True, alpha=0.3)
-    axes[i].set_ylabel('Ratio')
-    axes[i].set_xlabel('Year')
-    
+plt.legend(handles=[
+  mlines.Line2D([], [], color='#ff7f0e', marker='D', linestyle='None', markersize=10, label='Statistical'),
+  mlines.Line2D([], [], color='#1f77b4', marker='D', linestyle='None', markersize=10, label='Deep Learning'),
+  mlines.Line2D([], [], color='#d62728', marker='o', linestyle='None', markersize=10, label='Zero-shot'),
+  mlines.Line2D([], [], color='red', linestyle='--', label='Classical baseline (MASE=1.0)'),
+  mlines.Line2D([], [], color='green', linestyle='--', label='Proposed baseline (MASE=0.87)')
+], loc='upper left', fontsize=10)
 
-    axes[i].set_ylim(y_lim)
-
-for i in range(n_datasets, len(axes)):
-    axes[i].remove()
+plt.xlim(0.5, 7.5)
+plt.xticks(positions, labels)
 
 plt.tight_layout()
+plt.savefig("model_evolution_MASE.pdf", format='pdf', bbox_inches='tight')
+plt.show()
 
 # %% [markdown]
 # # Domain and Frequency Analysis
 
 # %%
-domain_performance = {}
-for domain in df_ratios_baseline['domain'].unique():
-   domain_data = df_ratios_baseline[df_ratios_baseline['domain'] == domain]
-   domain_performance[domain] = domain_data[model_columns_baseline].mean()
+# Performance by Domain - MASE vs Seasonal_naive
+domain_performance_mase_b = {}
+for domain in df_ratios_MASE_baseline['domain'].unique():
+  domain_data = df_ratios_MASE_baseline[df_ratios_MASE_baseline['domain'] == domain]
+  domain_performance_mase_b[domain] = np.exp(np.log(domain_data[model_columns_MASE_baseline] + 1).mean()) - 1
 
-df_domain = pd.DataFrame(domain_performance).T
-
-domain_order = df_domain.mean(axis=1).sort_values(ascending=False).index
-
-df_domain = df_domain.loc[domain_order, model_order_b]
-
-plt.figure(figsize=(25, 6))
-sns.heatmap(df_domain, 
-           annot=True, 
-           fmt='.2f',
-           cmap='seismic',
-           center=0,
-           vmin=-1,
-           vmax=1)
-plt.title('Performance by Domain-baseline')
-plt.xlabel('Models')
-plt.ylabel('Domains')
-plt.xticks(rotation=45, ha='right')
-plt.tight_layout()
-plt.show()
-
-
-# %%
-df_ratios_PatchTST['frequency'] = df_ratios_PatchTST.index.str.split('/').str[1]
-model_columns_PatchTST = [col for col in df_ratios_PatchTST.columns if col not in ['domain', 'num_variates', 'frequency', 'naive', 'seasonal_naive', 'crossformer', 'auto_theta', 'auto_ets', 'auto_arima', 'deepar', 'feedforward', 'tft', 'N-BEATS', 'DLinear', 'tide']]
-
-domain_performance_PatchTST = {}
-for domain in df_ratios_PatchTST['domain'].unique():
-  domain_data_PatchTST = df_ratios_PatchTST[df_ratios_PatchTST['domain'] == domain]
-  domain_performance_PatchTST[domain] = domain_data_PatchTST[model_columns_PatchTST].mean()
-
-df_domain_PatchTST = pd.DataFrame(domain_performance_PatchTST).T
-
-domain_order_PatchTST = df_domain_PatchTST.mean(axis=1).sort_values(ascending=False).index
-
-df_domain_PatchTST = df_domain_PatchTST.loc[domain_order_PatchTST, model_order_PatchTST]
+df_domain_mase_b = pd.DataFrame(domain_performance_mase_b).T
+domain_order_mase_b = (np.exp(np.log(df_domain_mase_b + 1).mean(axis=1)) - 1).sort_values(ascending=False).index
+df_domain_mase_b = df_domain_mase_b.loc[domain_order_mase_b, model_order_MASE_b]
 
 plt.figure(figsize=(25, 6))
-sns.heatmap(df_domain_PatchTST, 
-          annot=True, 
-          fmt='.2f',
-          cmap='seismic',
-          center=0,
-          vmin=-1,
-          vmax=1)
-plt.title('Performance by Domain-PatchTST')
-plt.xlabel('Models')
-plt.ylabel('Domains')
-plt.xticks(rotation=45, ha='right')
-plt.tight_layout()
-plt.show()
-
-# %%
-freq_performance_baseline = {}
-for freq in df_ratios_baseline['frequency'].unique():
- freq_data_baseline = df_ratios_baseline[df_ratios_baseline['frequency'] == freq]
- freq_performance_baseline[freq] = freq_data_baseline[model_columns_baseline].mean()
-
-df_freq_baseline = pd.DataFrame(freq_performance_baseline).T
-
-model_order_freq_baseline = df_freq_baseline.mean().sort_values(ascending=False).index
-freq_order_baseline = df_freq_baseline.mean(axis=1).sort_values(ascending=False).index
-
-df_freq_baseline = df_freq_baseline.loc[freq_order_baseline, model_order_b]
-
-plt.figure(figsize=(25, 8))
-sns.heatmap(df_freq_baseline, 
-         annot=True, 
-         fmt='.2f',
+sns.heatmap(df_domain_mase_b, 
+         annot=False, 
          cmap='seismic',
          center=0,
          vmin=-1,
          vmax=1)
-plt.title('Performance by Frequency-baseline')
+plt.title('Performance by Domain - MASE: Seasonal Naive Baseline')
 plt.xlabel('Models')
-plt.ylabel('Frequencies')
+plt.ylabel('Domains')
 plt.xticks(rotation=45, ha='right')
 plt.tight_layout()
+
+plt.savefig("performance_domain_MASE_baseline.pdf", format='pdf', bbox_inches='tight')
 plt.show()
 
-# %%
-freq_performance_PatchTST = {}
-for freq in df_ratios_PatchTST['frequency'].unique():
-  freq_data_PatchTST = df_ratios_PatchTST[df_ratios_PatchTST['frequency'] == freq]
-  freq_performance_PatchTST[freq] = freq_data_PatchTST[model_columns_PatchTST].mean()
+# Performance by Domain - CRPS vs Seasonal_naive
+domain_performance_crps_b = {}
+for domain in df_ratios_CRPS_baseline['domain'].unique():
+ domain_data = df_ratios_CRPS_baseline[df_ratios_CRPS_baseline['domain'] == domain]
+ domain_performance_crps_b[domain] = np.exp(np.log(domain_data[model_columns_CRPS_baseline] + 1).mean()) - 1
 
-df_freq_PatchTST = pd.DataFrame(freq_performance_PatchTST).T
+df_domain_crps_b = pd.DataFrame(domain_performance_crps_b).T
+domain_order_crps_b = (np.exp(np.log(df_domain_crps_b + 1).mean(axis=1)) - 1).sort_values(ascending=False).index
+df_domain_crps_b = df_domain_crps_b.loc[domain_order_crps_b, model_order_CRPS_b]
 
-model_order_freq_PatchTST = df_freq_PatchTST.mean().sort_values(ascending=False).index
-freq_order_PatchTST = df_freq_PatchTST.mean(axis=1).sort_values(ascending=False).index
-
-df_freq_PatchTST = df_freq_PatchTST.loc[freq_order_PatchTST, model_order_PatchTST]
-
-plt.figure(figsize=(25, 8))
-sns.heatmap(df_freq_PatchTST, 
-          annot=True, 
-          fmt='.2f',
-          cmap='seismic',
-          center=0,
-          vmin=-1,
-          vmax=1)
-plt.title('Performance by Frequency-PatchTST')
+plt.figure(figsize=(25, 6))
+sns.heatmap(df_domain_crps_b, 
+        annot=False, 
+        cmap='seismic',
+        center=0,
+        vmin=-1,
+        vmax=1)
+plt.title('Performance by Domain - CRPS: Seasonal Naive Baseline', fontsize=30)
 plt.xlabel('Models')
-plt.ylabel('Frequencies')
+plt.ylabel('Domains')
 plt.xticks(rotation=45, ha='right')
 plt.tight_layout()
+
+plt.savefig("performance_domain_CRPS_baseline.pdf", format='pdf', bbox_inches='tight')
 plt.show()
 
+
 # %%
-period_performance_baseline = {}
-for period in df_ratios_baseline['term'].unique():
-    period_data_baseline = df_ratios_baseline[df_ratios_baseline['term'] == period]
-    period_performance_baseline[period] = period_data_baseline[model_columns_baseline].mean()
+# Performance by Domain - MASE vs Linear++
+domain_performance_mase_linear = {}
+for domain in df_ratios_MASE_linear['domain'].unique():
+  domain_data = df_ratios_MASE_linear[df_ratios_MASE_linear['domain'] == domain]
+  domain_performance_mase_linear[domain] = np.exp(np.log(domain_data[model_columns_MASE_linear] + 1).mean()) - 1
 
-df_period_baseline = pd.DataFrame(period_performance_baseline).T
+df_domain_mase_linear = pd.DataFrame(domain_performance_mase_linear).T
+domain_order_mase_linear = (np.exp(np.log(df_domain_mase_linear + 1).mean(axis=1)) - 1).sort_values(ascending=False).index
+df_domain_mase_linear = df_domain_mase_linear.loc[domain_order_mase_linear, model_order_MASE_linear]
 
-model_order_period_baseline = df_period_baseline.mean().sort_values(ascending=False).index
-period_order_baseline = df_period_baseline.mean(axis=1).sort_values(ascending=False).index
+plt.figure(figsize=(25, 6))
+sns.heatmap(df_domain_mase_linear, 
+         annot=False, 
+         cmap='seismic',
+         center=0,
+         vmin=-1,
+         vmax=1)
+plt.title('Performance by Domain - MASE vs Linear++ Baseline')
+plt.xlabel('Models')
+plt.ylabel('Domains')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
 
-df_period_baseline = df_period_baseline.loc[period_order_baseline, model_order_period_baseline]
+plt.savefig("performance_domain_MASE_linear.pdf", format='pdf', bbox_inches='tight')
+plt.show()
+
+# Performance by Domain - CRPS vs Linear++
+domain_performance_crps_linear = {}
+for domain in df_ratios_CRPS_linear['domain'].unique():
+  domain_data = df_ratios_CRPS_linear[df_ratios_CRPS_linear['domain'] == domain]
+  domain_performance_crps_linear[domain] = np.exp(np.log(domain_data[model_columns_CRPS_linear] + 1).mean()) - 1
+
+df_domain_crps_linear = pd.DataFrame(domain_performance_crps_linear).T
+domain_order_crps_linear = (np.exp(np.log(df_domain_crps_linear + 1).mean(axis=1)) - 1).sort_values(ascending=False).index
+df_domain_crps_linear = df_domain_crps_linear.loc[domain_order_crps_linear, model_order_CRPS_linear]
+
+plt.figure(figsize=(25, 6))
+sns.heatmap(df_domain_crps_linear, 
+         annot=False, 
+         cmap='seismic',
+         center=0,
+         vmin=-1,
+         vmax=1)
+plt.title('Performance by Domain - CRPS vs Linear++ Baseline')
+plt.xlabel('Models')
+plt.ylabel('Domains')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+
+plt.savefig("performance_domain_CRPS_linear.pdf", format='pdf', bbox_inches='tight')
+plt.show()
+
+
+
+# %%
+# Performance by Period (filtered datasets) - MASE vs Seasonal_naive
+datasets_with_3_horizons = [
+ 'jena_weather/10T',
+ 'jena_weather/H', 
+ 'bizitobs_service/10S',
+ 'bizitobs_l2c/5T',
+ 'bitbrains_fast storage/5T',
+ 'bitbrains_rnd/5T',
+ 'ett1/15T',
+ 'ett1/H',
+ 'ett2/15T', 
+ 'ett2/H',
+ 'loop_seattle/5T',
+ 'loop_seattle/H',
+ 'sz_taxi/15T',
+ 'm_dense/H',
+ 'solar/10T',
+ 'solar/H',
+ 'kdd_cup_2018/H',
+ 'electricity/15T',
+ 'electricity/H'
+]
+
+datasets_filtered_complete = []
+for dataset in datasets_with_3_horizons:
+  for term in ['short', 'medium', 'long']:
+      datasets_filtered_complete.append(f"{dataset}/{term}")
+
+df_filtered_baseline = df_ratios_MASE_baseline[df_ratios_MASE_baseline.index.isin(datasets_filtered_complete)]
+
+period_performance_filtered_baseline = {}
+for period in df_filtered_baseline['term'].unique():
+  period_data_filtered = df_filtered_baseline[df_filtered_baseline['term'] == period]
+  period_performance_filtered_baseline[period] = np.exp(np.log(period_data_filtered[model_columns_MASE_baseline] + 1).mean()) - 1
+
+df_period_filtered_baseline = pd.DataFrame(period_performance_filtered_baseline).T
+
+model_order_period_filtered_baseline = (np.exp(np.log(df_period_filtered_baseline + 1).mean()) - 1).sort_values(ascending=False).index
+period_order_filtered_baseline = (np.exp(np.log(df_period_filtered_baseline + 1).mean(axis=1)) - 1).sort_values(ascending=False).index
+
+df_period_filtered_baseline = df_period_filtered_baseline.loc[period_order_filtered_baseline, model_order_period_filtered_baseline]
 
 plt.figure(figsize=(25, 8))
-sns.heatmap(df_period_baseline, annot=True, fmt='.2f', cmap='seismic', center=0, vmin=-1, vmax=1)
-plt.title('Performance by Period - baseline')
+sns.heatmap(df_period_filtered_baseline, annot=False, fmt='.2f', cmap='seismic', center=0, vmin=-1, vmax=1)
+plt.title('Geometric Mean MASE by Period - filtered (Seasonal Naive baseline)')
 plt.xlabel('Models')
 plt.ylabel('Periods')
 plt.xticks(rotation=45, ha='right')
 plt.tight_layout()
+
+plt.savefig("performance_period_filtered_MASE_baseline.pdf", format='pdf', bbox_inches='tight')
 plt.show()
 
-# %% [markdown]
-# # Model Type Analysis
-# 
-# ## Model Categories by Type
-# 
-#  | Type | Models |
-#  |------|--------|
-# | Statistical | naive, seasonal_naive, auto_arima, auto_ets, auto_theta |
-# | Deep Learning Classical | deepar, PatchTST, MLP_PatchTST_2, tide, tft, feedforward, crossformer, N-BEATS, DLinear |
-#  | Pretrained | TiRex, Toto_Open_Base_1.0, YingLong_6m, YingLong_50m, YingLong_110m, YingLong_300m, tabpfn_ts, Chronos_small, chronos_base, chronos_large, chronos_bolt_small, chronos_bolt_base, timesfm, timesfm_2_0_500m, sundial_base_128m, Moirai_small, Moirai_base, Moirai_large, TTM-R1-Zeroshot, TTM-R2-Zeroshot, TTM-R2-Finetuned, visionts, Lag-Llama, Timer |
-# | Fine-Tuned | tempo_ensemble, TTM-R2-Finetuned |
+# Performance by Period (filtered datasets) - MASE vs Linear++
+df_filtered = df_ratios_MASE_linear[df_ratios_MASE_linear.index.isin(datasets_filtered_complete)]
 
-# %% [markdown]
-# # Comprehensive Model Evaluation
-#  
-# ## Performance Metrics Definitions
-# 
-# - **Arithmetic Score**: Mean normalized MASE across all datasets
-# - **Failure Rate**: Proportion of datasets where model performs worse than baseline (ratio > 1.0)
-# - **Ranking Statistics**: Mean, median, quartiles of performance ranks across datasets
-# - **IQR**: Interquartile range of ranks, indicating consistency
-# 
+period_performance_filtered = {}
+for period in df_filtered['term'].unique():
+  period_data_filtered = df_filtered[df_filtered['term'] == period]
+  period_performance_filtered[period] = np.exp(np.log(period_data_filtered[model_columns_MASE_linear] + 1).mean()) - 1
 
-# %%
-scores_arith = {}
-mean_ranks = {}
-std_ranks = {}
-q25_ranks = {}
-median_ranks = {}
-q75_ranks = {}
-max_ranks = {}
-iqr_ranks = {}
-worse_than_baseline = {}
+df_period_filtered = pd.DataFrame(period_performance_filtered).T
 
-for model in model_columns_baseline:
-   ratios = df_ratios_baseline[model]
-   ranks = df_ranks_baseline[model]
-   
-   scores_arith[model] = ratios.mean()
-   mean_ranks[model] = ranks.mean()
-   std_ranks[model] = ranks.std()
-   q25_ranks[model] = ranks.quantile(0.25)
-   median_ranks[model] = ranks.median()
-   q75_ranks[model] = ranks.quantile(0.75)
-   max_ranks[model] = ranks.max()
-   iqr_ranks[model] = q75_ranks[model] - q25_ranks[model]
-   worse_than_baseline[model] = (ratios > 0).sum()
+model_order_period_filtered = (np.exp(np.log(df_period_filtered + 1).mean()) - 1).sort_values(ascending=False).index
+period_order_filtered = (np.exp(np.log(df_period_filtered + 1).mean(axis=1)) - 1).sort_values(ascending=False).index
 
-performance_data = []
-for i, (model, score) in enumerate(sorted(scores_arith.items(), key=lambda x: x[1]), 1):
-   arith_score = scores_arith[model]+1
-   failure_rate = worse_than_baseline[model] / len(df_ratios_baseline)
-   mean_rank = mean_ranks[model]
-   std_rank = std_ranks[model]
-   q25_rank = q25_ranks[model]
-   median_rank = median_ranks[model]
-   q75_rank = q75_ranks[model]
-   max_rank = max_ranks[model]
-   iqr_rank = iqr_ranks[model]
-   worse_count = worse_than_baseline[model]
-   
-   performance_data.append({
-       'Rank': i,
-       'Model': model,
-       'Arith_Score': round(arith_score, 3),
-       'Mean_Rank': round(mean_rank, 1),
-       'Std_Rank': round(std_rank, 1),
-       'Q25': round(q25_rank, 1),
-       'Median': round(median_rank, 1),
-       'Q75': round(q75_rank, 1),
-       'Max': int(max_rank),
-       'IQR': round(iqr_rank, 1),
-       'Worse_Count': int(worse_count),
-       'Failure_Rate': f"{failure_rate:.1%}"
-   })
+df_period_filtered = df_period_filtered.loc[period_order_filtered, model_order_period_filtered]
 
-df_performance = pd.DataFrame(performance_data)
+plt.figure(figsize=(25, 8))
+sns.heatmap(df_period_filtered, annot=False, fmt='.2f', cmap='seismic', center=0, vmin=-1, vmax=1)
+plt.title('Geometric Mean MASE by Period - filtered (Linear++ baseline)')
+plt.xlabel('Models')
+plt.ylabel('Periods')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
 
-print("Comprehensive Model Evaluation:")
-print("=" * 120)
-print(df_performance.to_string(index=False))
-
-print(f"\nSummary:")
-print(f"Total models: {len(scores_arith)}")
-print(f"Total datasets: {len(df_ratios_baseline)}")
-
-
-# %%
-scores_arith = {}
-mean_ranks = {}
-std_ranks = {}
-q25_ranks = {}
-median_ranks = {}
-q75_ranks = {}
-max_ranks = {}
-iqr_ranks = {}
-worse_than_PatchTST = {}
-
-for model in model_columns_PatchTST:
-   ratios = df_ratios_PatchTST[model]
-   ranks = df_ranks_PatchTST[model]
-   
-   scores_arith[model] = ratios.mean()
-   mean_ranks[model] = ranks.mean()
-   std_ranks[model] = ranks.std()
-   q25_ranks[model] = ranks.quantile(0.25)
-   median_ranks[model] = ranks.median()
-   q75_ranks[model] = ranks.quantile(0.75)
-   max_ranks[model] = ranks.max()
-   iqr_ranks[model] = q75_ranks[model] - q25_ranks[model]
-   worse_than_PatchTST[model] = (ratios > 0).sum()
-
-performance_data = []
-for i, (model, score) in enumerate(sorted(scores_arith.items(), key=lambda x: x[1]), 1):
-   arith_score = scores_arith[model]+1
-   failure_rate = worse_than_PatchTST[model] / len(df_ratios_PatchTST)
-   mean_rank = mean_ranks[model]
-   std_rank = std_ranks[model]
-   q25_rank = q25_ranks[model]
-   median_rank = median_ranks[model]
-   q75_rank = q75_ranks[model]
-   max_rank = max_ranks[model]
-   iqr_rank = iqr_ranks[model]
-   worse_count = worse_than_PatchTST[model]
-   
-   performance_data.append({
-       'Rank': i,
-       'Model': model,
-       'Arith_Score': round(arith_score, 3),
-       'Mean_Rank': round(mean_rank, 1),
-       'Std_Rank': round(std_rank, 1),
-       'Q25': round(q25_rank, 1),
-       'Median': round(median_rank, 1),
-       'Q75': round(q75_rank, 1),
-       'Max': int(max_rank),
-       'IQR': round(iqr_rank, 1),
-       'Worse_Count': int(worse_count),
-       'Failure_Rate': f"{failure_rate:.1%}"
-   })
-
-df_performance = pd.DataFrame(performance_data)
-
-print("Comprehensive Model Evaluation:")
-print("=" * 120)
-print(df_performance.to_string(index=False))
-
-print(f"\nSummary:")
-print(f"Total models: {len(scores_arith)}")
-print(f"Total datasets: {len(df_ratios_PatchTST)}")
-
-
-# %% [markdown]
-# ## Composite Reliability Score
-# 
-# **Formula**: `Composite = Arithmetic_Score + Failure_Rate * 1.7`
-# 
-# Combines arithmetic performance with failure penalty to assess both accuracy and reliability.
-
-# %%
-composite_scores = {}
-
-for model in model_columns_baseline:
-  arith_score = scores_arith[model]
-  failure_rate = worse_than_baseline[model] / len(df_ratios_baseline)
-  failure_penalty = failure_rate * 1.7
-  composite_scores[model] = arith_score + failure_penalty
-
-composite_data = []
-for i, (model, composite_score) in enumerate(sorted(composite_scores.items(), key=lambda x: x[1]), 1):
-  arith_score = scores_arith[model]+1
-  failure_rate = worse_than_baseline[model] / len(df_ratios_baseline)
-  failure_penalty = failure_rate * 1.7
-  
-  composite_data.append({
-      'Rank': i,
-      'Model': model,
-      'Arith_Score': round(arith_score, 3),
-      'Failure_Score': round(failure_penalty, 3),
-      'Composite': round(composite_score+1, 3)
-  })
-
-df_composite = pd.DataFrame(composite_data)
-
-print("Composite Reliability Score:")
-print("=" * 60)
-print(df_composite.to_string(index=False))
-
-print(f"\nTotal models: {len(composite_scores)}")
-
-
-# %% [markdown]
-# ## Performance Tier Analysis
-# 
-# Models are categorized based on their frequency of appearing in top 30% vs bottom 30% across all datasets.
-# 
-
-# %%
-all_mase = pd.DataFrame({
-    model: df['eval_metrics/MASE[0.5]'] 
-    for model, df in models.items()
-})
-
-ranks = all_mase.rank(axis=1)
-n_models = len(models)
-top_30_pct_threshold = 0.3 * n_models  
-worst_30_pct_threshold = 0.7 * n_models
-
-results_top = []
-results_worst = []
-for model in ranks.columns:
-    model_ranks = ranks[model]
-    
-    top_30_rate = (model_ranks <= top_30_pct_threshold).mean()
-    worst_30_rate = (model_ranks > worst_30_pct_threshold).mean()
-    
-    results_top.append((model, top_30_rate))
-    results_worst.append((model, worst_30_rate))
-
-results_top.sort(key=lambda x: x[1], reverse=True)
-results_worst.sort(key=lambda x: x[1], reverse=True)
-
-print("Models with highest Top 30% rate:")
-print("=" * 50)
-for i, (model_name, top_30_rate) in enumerate(results_top, 1):
-    print(f"{i:2d}. {model_name:<25} | Top30%: {top_30_rate:.1%}")
-
-print(f"\nTotal models: {len(results_top)}")
-
-print("\n\nModels with highest Bottom 30% rate:")
-print("=" * 50)
-for i, (model_name, worst_30_rate) in enumerate(results_worst, 1):
-    print(f"{i:2d}. {model_name:<25} | Bottom30%: {worst_30_rate:.1%}")
-
-print(f"\nTotal models: {len(results_worst)}")
-
-
-# %% [markdown]
-# ## Stability Analysis Across Forecast Horizons
-# 
-# **Stability Metric**:
-# - **Average Standard Deviation**: Mean of standard deviations across different forecast horizons for each dataset
-# 
-# 
-
-# %%
-stability_analysis = {}
-
-base_datasets = {}
-for dataset in df_ratios_baseline.index:
-   base_name = dataset.rsplit('/', 1)[0] 
-   if base_name not in base_datasets:
-       base_datasets[base_name] = []
-   base_datasets[base_name].append(dataset)
-
-complete_datasets = {k: v for k, v in base_datasets.items() if len(v) == 3}
-
-for model in model_columns_baseline:
-   model_stability = []
-   
-   for base_name, horizons in complete_datasets.items():
-       mase_values = []
-       for horizon_dataset in horizons:
-           mase_values.append(df_ratios_baseline.loc[horizon_dataset, model])
-       
-       mean_mase = np.mean(mase_values)
-       std_mase = np.std(mase_values)
-       
-       model_stability.append({
-           'base_dataset': base_name,
-           'mean_mase': mean_mase,
-           'std_mase': std_mase
-       })
-   
-   stability_analysis[model] = model_stability
-
-
-model_stability_scores = {}
-for model in model_columns_baseline:
-   avg_std = np.mean([x['std_mase'] for x in stability_analysis[model]])
-   model_stability_scores[model] = avg_std
-
-stability_data = []
-for i, (model, avg_std) in enumerate(sorted(model_stability_scores.items(), key=lambda x: x[1]), 1):
-   stability_data.append({
-       'Rank': i,
-       'Model': model,
-       'Avg_Std': round(avg_std, 3)
-   })
-
-df_stability = pd.DataFrame(stability_data)
-
-print("Model Stability Across Forecast Horizons:")
-print("=" * 50)
-print(df_stability.to_string(index=False))
-
-
+plt.savefig("performance_period_filtered_MASE_linear.pdf", format='pdf', bbox_inches='tight')
+plt.show()
 
 
