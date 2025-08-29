@@ -1,0 +1,11 @@
+{
+  "dataset": "solar/H/medium",
+  "parameters": {
+    "lr": 0.004338110550579705,
+    "weight_decay": 1.1449902073195876e-06,
+    "context_length_multiplier": 2,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

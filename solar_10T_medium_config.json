@@ -1,0 +1,11 @@
+{
+  "dataset": "solar/10T/medium",
+  "parameters": {
+    "lr": 0.0037062586623527486,
+    "weight_decay": 7.335090948568913e-06,
+    "context_length_multiplier": 2,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

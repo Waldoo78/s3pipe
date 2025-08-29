@@ -1,0 +1,11 @@
+{
+  "dataset": "bitbrains_fast_storage/5T/long",
+  "parameters": {
+    "lr": 0.00016288987475148302,
+    "weight_decay": 0.001103284557503147,
+    "context_length_multiplier": 2,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

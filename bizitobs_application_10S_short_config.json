@@ -1,0 +1,11 @@
+{
+  "dataset": "bizitobs_application/10S/short",
+  "parameters": {
+    "lr": 0.008495635477695685,
+    "weight_decay": 7.127943392336312e-05,
+    "context_length_multiplier": 15,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

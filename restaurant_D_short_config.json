@@ -1,0 +1,11 @@
+{
+  "dataset": "restaurant/D/short",
+  "parameters": {
+    "lr": 0.0025367315895681165,
+    "weight_decay": 7.27232611493658e-05,
+    "context_length_multiplier": 2,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

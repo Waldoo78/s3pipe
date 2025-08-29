@@ -1,0 +1,11 @@
+{
+  "dataset": "car_parts/M/short",
+  "parameters": {
+    "lr": 2.8140862546377908e-05,
+    "weight_decay": 0.004348778805443039,
+    "context_length_multiplier": 20,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

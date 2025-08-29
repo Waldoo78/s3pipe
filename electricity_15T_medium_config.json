@@ -1,0 +1,11 @@
+{
+  "dataset": "electricity/15T/medium",
+  "parameters": {
+    "lr": 0.0023023927261724376,
+    "weight_decay": 2.454456604371763e-06,
+    "context_length_multiplier": 20,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

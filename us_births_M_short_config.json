@@ -1,0 +1,11 @@
+{
+  "dataset": "us_births/M/short",
+  "parameters": {
+    "lr": 0.006472457620478026,
+    "weight_decay": 3.0787405042429378e-06,
+    "context_length_multiplier": 5,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

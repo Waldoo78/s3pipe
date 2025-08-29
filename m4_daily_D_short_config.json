@@ -1,0 +1,11 @@
+{
+  "dataset": "m4_daily/D/short",
+  "parameters": {
+    "lr": 0.007746720290791799,
+    "weight_decay": 0.0007407686973048768,
+    "context_length_multiplier": 5,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

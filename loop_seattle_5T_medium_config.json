@@ -1,0 +1,11 @@
+{
+  "dataset": "loop_seattle/5T/medium",
+  "parameters": {
+    "lr": 0.008672417590002689,
+    "weight_decay": 5.868813500749049e-05,
+    "context_length_multiplier": 2,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

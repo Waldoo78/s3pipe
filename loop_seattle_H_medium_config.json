@@ -1,0 +1,11 @@
+{
+  "dataset": "loop_seattle/H/medium",
+  "parameters": {
+    "lr": 0.0004131589260171245,
+    "weight_decay": 0.00019561711242612427,
+    "context_length_multiplier": 5,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

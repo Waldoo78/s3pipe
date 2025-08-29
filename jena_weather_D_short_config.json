@@ -1,0 +1,11 @@
+{
+  "dataset": "jena_weather/D/short",
+  "parameters": {
+    "lr": 0.0006454137870144108,
+    "weight_decay": 3.5328894564711023e-06,
+    "context_length_multiplier": 10,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

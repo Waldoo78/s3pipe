@@ -1,0 +1,11 @@
+{
+  "dataset": "bitbrains_rnd/5T/long",
+  "parameters": {
+    "lr": 0.003993770531905701,
+    "weight_decay": 0.0005042173190482358,
+    "context_length_multiplier": 2,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

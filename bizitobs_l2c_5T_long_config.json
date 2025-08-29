@@ -1,0 +1,11 @@
+{
+  "dataset": "bizitobs_l2c/5T/long",
+  "parameters": {
+    "lr": 0.0028974348096446625,
+    "weight_decay": 0.0002231001497677583,
+    "context_length_multiplier": 10,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

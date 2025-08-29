@@ -1,0 +1,11 @@
+{
+  "dataset": "sz_taxi/15T/long",
+  "parameters": {
+    "lr": 0.0007315540157330962,
+    "weight_decay": 0.0015841031224833385,
+    "context_length_multiplier": 2,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

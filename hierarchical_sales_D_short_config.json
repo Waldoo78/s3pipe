@@ -1,0 +1,11 @@
+{
+  "dataset": "hierarchical_sales/D/short",
+  "parameters": {
+    "lr": 0.0019004386084753115,
+    "weight_decay": 0.001087057024527442,
+    "context_length_multiplier": 2,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

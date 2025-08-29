@@ -1,0 +1,11 @@
+{
+  "dataset": "ett2/W/short",
+  "parameters": {
+    "lr": 0.0021809438148572974,
+    "weight_decay": 0.00011117495685536585,
+    "context_length_multiplier": 10,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

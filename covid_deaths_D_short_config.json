@@ -1,0 +1,11 @@
+{
+  "dataset": "covid_deaths/D/short",
+  "parameters": {
+    "lr": 0.0025106186540335396,
+    "weight_decay": 0.0017305073652870999,
+    "context_length_multiplier": 2,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

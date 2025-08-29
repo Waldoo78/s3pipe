@@ -1,0 +1,11 @@
+{
+  "dataset": "m_dense/D/short",
+  "parameters": {
+    "lr": 0.0010731010844302945,
+    "weight_decay": 0.0016054540316959257,
+    "context_length_multiplier": 5,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

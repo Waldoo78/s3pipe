@@ -1,0 +1,11 @@
+{
+  "dataset": "saugeen/W/short",
+  "parameters": {
+    "lr": 0.0003496603574322528,
+    "weight_decay": 0.0010201632846368318,
+    "context_length_multiplier": 15,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

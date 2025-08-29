@@ -1,0 +1,11 @@
+{
+  "dataset": "kdd_cup_2018/H/short",
+  "parameters": {
+    "lr": 0.002107436543511604,
+    "weight_decay": 0.008846305068704,
+    "context_length_multiplier": 5,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

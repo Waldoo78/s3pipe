@@ -1,0 +1,11 @@
+{
+  "dataset": "m4_weekly/W/short",
+  "parameters": {
+    "lr": 0.0012309972024206518,
+    "weight_decay": 0.00013221199542867728,
+    "context_length_multiplier": 5,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

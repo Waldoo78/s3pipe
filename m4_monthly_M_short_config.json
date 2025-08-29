@@ -1,0 +1,11 @@
+{
+  "dataset": "m4_monthly/M/short",
+  "parameters": {
+    "lr": 0.006961472694477724,
+    "weight_decay": 1.0484860050369056e-06,
+    "context_length_multiplier": 2,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "dataset": "bitbrains_rnd/H/short",
+  "parameters": {
+    "lr": 0.008200309256410819,
+    "weight_decay": 1.7878865991735675e-05,
+    "context_length_multiplier": 2,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

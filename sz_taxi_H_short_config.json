@@ -1,0 +1,11 @@
+{
+  "dataset": "sz_taxi/H/short",
+  "parameters": {
+    "lr": 0.001112617979170054,
+    "weight_decay": 0.00031810936527170157,
+    "context_length_multiplier": 5,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

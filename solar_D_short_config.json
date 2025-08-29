@@ -1,0 +1,11 @@
+{
+  "dataset": "solar/D/short",
+  "parameters": {
+    "lr": 0.0006770942496752478,
+    "weight_decay": 2.705645465537882e-05,
+    "context_length_multiplier": 2,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "dataset": "m4_quarterly/Q/short",
+  "parameters": {
+    "lr": 0.0011412948456769826,
+    "weight_decay": 3.5638371302153106e-06,
+    "context_length_multiplier": 2,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "dataset": "ett1/H/long",
+  "parameters": {
+    "lr": 0.0006222193588984298,
+    "weight_decay": 0.006725577585140625,
+    "context_length_multiplier": 5,
+    "num_instances": 100.0,
+    "max_epochs": 150,
+    "patience": 5
+  }
+}
